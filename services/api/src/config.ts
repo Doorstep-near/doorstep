@@ -58,7 +58,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const explorerTxUrl = network === "testnet" ? "https://testnet.nearblocks.io/txns/" : EXPLORER_TX_URL;
   return {
     demoMode,
-    port: num(env, "API_PORT", API_PORT),
+    // Hosts such as Render set PORT; API_PORT wins when both are set.
+    port: num(env, "API_PORT", num(env, "PORT", API_PORT)),
     host: str(env, "API_HOST", "localhost"),
     webUrl: str(env, "WEB_URL", "http://localhost:5173").replace(/\/+$/, ""),
     // Demo mode always uses "demo", so a real token from .env is never printed or needed.
