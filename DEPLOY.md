@@ -24,6 +24,19 @@ Demo mode uses a fake chain, a fake 1Click and a mock courier. It needs no keys 
 
 Every push to `main` redeploys both services.
 
+## The web app on Vercel (optional second host)
+
+`vercel.json` builds the same web app on Vercel. It uses the same API on Render, which already allows `https://doorstep-near.vercel.app` (`CORS_ORIGINS` in `render.yaml`).
+
+1. Sign in at https://vercel.com with GitHub. Give the Vercel GitHub app access to `Doorstep-near/doorstep`.
+2. Go to **Add New > Project** and import the repo. Fill in:
+   - **Project Name:** `doorstep-near`. This gives the address `doorstep-near.vercel.app`.
+   - **Root Directory:** leave it as the repo root.
+   - **Environment Variables:** `VITE_API_URL` = `https://doorstep-near-api.onrender.com`
+3. Click **Deploy**. Build settings come from `vercel.json`.
+
+If Vercel gives the project a different address, add that address to `CORS_ORIGINS` in `render.yaml` and push.
+
 ## Things to know
 
 - **The free API sleeps after about 15 minutes with no visits.** The next visit wakes it, which takes up to a minute.

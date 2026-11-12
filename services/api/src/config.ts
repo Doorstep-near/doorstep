@@ -10,6 +10,8 @@ export interface Config {
   port: number;
   host: string;
   webUrl: string;
+  /** Extra web origins allowed by CORS besides webUrl (e.g. a second host for the web app). */
+  corsOrigins: string[];
   sellerToken: string;
   shopName: string;
   shopAccount: string;
@@ -62,6 +64,10 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port: num(env, "API_PORT", num(env, "PORT", API_PORT)),
     host: str(env, "API_HOST", "localhost"),
     webUrl: str(env, "WEB_URL", "http://localhost:5173").replace(/\/+$/, ""),
+    corsOrigins: str(env, "CORS_ORIGINS")
+      .split(",")
+      .map((o) => o.trim().replace(/\/+$/, ""))
+      .filter(Boolean),
     // Demo mode always uses "demo", so a real token from .env is never printed or needed.
     sellerToken: demoMode ? "demo" : str(env, "SELLER_TOKEN"),
     shopName: demoMode ? "Eraya Foods (demo)" : str(env, "SHOP_NAME", "My shop"),

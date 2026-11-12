@@ -54,11 +54,11 @@ export function buildApp(built: Built, opts: { logger?: boolean } = {}): Fastify
   app.addContentTypeParser("application/json", { parseAs: "string" }, parse(true));
   app.addContentTypeParser("*", { parseAs: "string" }, parse(false));
 
-  const webUrl = deps.config.webUrl;
+  const allowedOrigins = new Set([deps.config.webUrl, ...deps.config.corsOrigins]);
   app.register(cors, {
     origin: (origin, cb) => {
       // Same-origin/curl requests have no Origin. Demo mode also allows any localhost port (Vite may pick another).
-      if (!origin || origin === webUrl) return cb(null, true);
+      if (!origin || allowedOrigins.has(origin)) return cb(null, true);
       if (deps.config.demoMode && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
       cb(null, false);
     },
