@@ -1,0 +1,17 @@
+{
+  "name": "@doorstep/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API contract (zod schemas), signed-message formats and money helpers shared by services/api and apps/web",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  }
+}

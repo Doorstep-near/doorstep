@@ -1,0 +1,38 @@
+{
+  "name": "doorstep",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pay a real shop with any crypto, from any chain. The money waits in a NEAR contract until delivery is proven.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "demo": "concurrently -k -n api,web -c cyan,magenta \"npm run dev:demo -w @doorstep/api\" \"npm run dev -w @doorstep/web\"",
+    "dev:api": "npm run dev -w @doorstep/api",
+    "dev:web": "npm run dev -w @doorstep/web",
+    "dev:mock": "npm run dev:mock -w @doorstep/web",
+    "build:web": "npm run build -w @doorstep/web",
+    "test": "npm run test:shared && npm run test:api && npm run test:web",
+    "test:shared": "npm test -w @doorstep/shared",
+    "test:api": "npm test -w @doorstep/api",
+    "test:web": "npm test -w @doorstep/web",
+    "test:contract": "cd contracts/escrow && cargo test",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "deploy": "bash scripts/deploy.sh",
+    "order": "bash scripts/order.sh",
+    "oneclick": "node scripts/oneclick-test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "concurrently": "^9.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -5,3 +5,9 @@ node_modules/
 .runs/
 *.log
 .vscode/
+dist/
+data/
+*.sqlite
+*.sqlite-*
+coverage/
+.env.local
