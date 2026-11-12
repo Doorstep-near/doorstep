@@ -18,7 +18,7 @@ services:
       # Public URL of the web app below (used for CORS and pay links).
       - key: WEB_URL
         value: https://doorstep-near.onrender.com
-      # The same web app on Vercel (vercel.json) may call the API too.
+      # The same web app on Vercel (apps/web/vercel.json) may call the API too.
       - key: CORS_ORIGINS
         value: https://doorstep-near.vercel.app
 
