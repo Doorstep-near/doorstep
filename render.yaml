@@ -20,7 +20,7 @@ services:
         value: https://doorstep-near.onrender.com
       # The same web app on Vercel (apps/web/vercel.json) may call the API too.
       - key: CORS_ORIGINS
-        value: https://doorstep-near.vercel.app
+        value: https://doorstep-iug1.vercel.app
 
   - type: web
     name: doorstep-near

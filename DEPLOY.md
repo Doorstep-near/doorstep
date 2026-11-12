@@ -26,18 +26,18 @@ Every push to `main` redeploys both services.
 
 ## The web app on Vercel (optional second host)
 
-`apps/web/vercel.json` builds the website on Vercel. It uses the same API on Render, which already allows `https://doorstep-near.vercel.app` (`CORS_ORIGINS` in `render.yaml`).
+`apps/web/vercel.json` builds the website on Vercel. It uses the same API on Render, which allows the Vercel address in `CORS_ORIGINS` (`render.yaml`; currently `https://doorstep-iug1.vercel.app`).
 
 1. Sign in at https://vercel.com with GitHub. Give the Vercel GitHub app access to `Doorstep-near/doorstep`.
 2. Go to **Add New > Project** and import the repo.
 3. Vercel finds two apps. Click **Import single project** next to **web (Vite)**. Do not use the multi-service import.
 4. Fill in:
-   - **Project Name:** `doorstep-near`. This gives the address `doorstep-near.vercel.app`.
+   - **Project Name:** any name. Vercel picks the address (ours is `doorstep-iug1.vercel.app`).
    - **Root Directory:** `apps/web`.
    - **Environment Variables:** `VITE_API_URL` = `https://doorstep-near-api.onrender.com`
 5. Click **Deploy**. Build settings come from `apps/web/vercel.json`.
 
-If Vercel gives the project a different address, add that address to `CORS_ORIGINS` in `render.yaml` and push.
+`VITE_API_URL` must be the **Config** type: Vercel refuses `VITE_` variables as secrets because they are built into the public site. If the address changes, put the new one in `CORS_ORIGINS` in `render.yaml` and push.
 
 ## Things to know
 
