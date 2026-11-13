@@ -37,6 +37,9 @@ describe("buyer pay flow (mock API)", () => {
     expect(screen.getByText(/Send only USDC on Base/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /QR code of the Base deposit address/ })).toBeInTheDocument();
     expect(screen.getByText("Waiting for your payment")).toBeInTheDocument();
+    // Practice mode: a fake address no wallet accepts, and a loud warning.
+    expect(screen.getByRole("alert")).toHaveTextContent("Practice mode: don't send real money");
+    expect(screen.getByText(/^DEMO-NOT-REAL-[0-9a-f]{16}$/)).toBeInTheDocument();
     expect(localStorage.getItem("doorstep:key:demo-mom-gift")).toMatch(/^[A-Za-z0-9_-]{43}$/);
 
     // 4. Demo control: simulate the payment.

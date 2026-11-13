@@ -24,7 +24,7 @@ export function DemoBanner() {
     <div className="relative z-40 flex h-9 items-center justify-center gap-2 bg-waiting-bg px-4 py-1.5 text-center text-[13px] font-medium text-waiting">
       <FlaskConical aria-hidden className="size-3.5 shrink-0" />
       <span className="truncate">
-        Demo mode — no real money moves{isMock ? <span className="hidden sm:inline"> · sample data lives in your browser</span> : null}
+        Demo mode — practice only, don't send real money{isMock ? <span className="hidden sm:inline"> · sample data lives in your browser</span> : null}
       </span>
       {sandbox && (
         <button type="button" onClick={() => setSandbox(false, "/")} className="ml-1 rounded underline underline-offset-2 hover:no-underline">

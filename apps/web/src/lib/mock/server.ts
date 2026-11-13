@@ -4,6 +4,7 @@
 // can be clicked through without a backend.
 import {
   CreateOrderRequest,
+  DEMO_DEPOSIT_PREFIX,
   DepositSubmitRequest,
   OtpRevealRequest,
   OtpVerifyRequest,
@@ -112,21 +113,9 @@ function decimalToUnits(amount: string, decimals: number): string {
   return (BigInt(whole) * 10n ** BigInt(decimals) + BigInt((frac + "0".repeat(decimals)).slice(0, decimals) || "0")).toString();
 }
 
-function depositAddressFor(chain: string): string {
-  const info = chainInfo(chain);
-  if (info.family === "evm") return `0x${randomHex(20)}`;
-  switch (chain) {
-    case "near":
-      return randomHex(32);
-    case "btc":
-      return `bc1q${Array.from(randomBytes(38), (b) => "qpzry9x8gf2tvdw0s3jn54khce6mua7l"[b % 32]).join("")}`;
-    case "tron":
-      return `T${base58Encode(randomBytes(25)).slice(0, 33).padEnd(33, "x")}`;
-    case "xrp":
-      return `r${base58Encode(randomBytes(24)).slice(0, 33)}`;
-    default:
-      return base58Encode(randomBytes(32));
-  }
+/** Never a real address: invalid on every chain, so nobody can pay into it by mistake. */
+function depositAddress(): string {
+  return `${DEMO_DEPOSIT_PREFIX}${randomHex(8)}`;
 }
 
 function etaFor(chain: string): number {
@@ -178,7 +167,7 @@ function makePayment(token: Token, priceUnits: string, refundTo: string, at: num
     originChain: token.chain,
     amountIn: q.amountIn,
     amountInFormatted: q.amountInFormatted,
-    depositAddress: depositAddressFor(token.chain),
+    depositAddress: depositAddress(),
     depositMemo: token.chain === "xrp" || token.chain === "stellar" ? randomDigits(9) : null,
     deadline: iso(at + HOUR),
     refundTo,

@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { Order, Payment } from "@doorstep/shared";
+import { isDemoDepositAddress, type Order, type Payment } from "@doorstep/shared";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Check, LoaderCircle, Send, Timer, TriangleExclamationPoint } from "lucide-react";
 import { useState } from "react";
@@ -151,6 +151,8 @@ export function DepositView({ order, payment, demoMode, onOrder, onChangeToken, 
   const problem = PAYMENT_PROBLEMS.includes(payment.status) ? PROBLEM_COPY[payment.status] : null;
   const chain = chainName(payment.originChain);
   const inFlight = payment.status !== "PENDING_DEPOSIT";
+  // Demo mode and the sandbox use fake addresses no wallet accepts; say so loudly anyway.
+  const practice = demoMode || isDemoDepositAddress(payment.depositAddress);
 
   if (problem) {
     return (
@@ -194,6 +196,11 @@ export function DepositView({ order, payment, demoMode, onOrder, onChangeToken, 
         </div>
       ) : (
         <>
+          {practice && !inFlight && (
+            <Banner tone="danger" title="Practice mode: don't send real money" role="alert">
+              This address is fake on purpose. Wallets and exchanges reject it, and nothing sent here can reach a shop. Use the demo steps on this page to see what happens next.
+            </Banner>
+          )}
           <Card padding="none" className="overflow-hidden">
             <div className="px-5 pt-5 pb-4">
               <p className="text-sm font-medium text-text-2">Send exactly</p>
@@ -224,9 +231,11 @@ export function DepositView({ order, payment, demoMode, onOrder, onChangeToken, 
             <Card>
               <div className="flex flex-col items-center">
                 <QrCode value={payment.depositAddress} label={`QR code of the ${chain} deposit address`} size={168} />
-                <p className="mt-2 text-xs text-text-3">Scan with your wallet, or copy the address</p>
+                <p className={clsx("mt-2 text-xs", practice ? "font-medium text-danger" : "text-text-3")}>
+                  {practice ? "Practice address: real wallets reject it" : "Scan with your wallet, or copy the address"}
+                </p>
               </div>
-              <CopyField className="mt-4" label={`Deposit address (${chain})`} value={payment.depositAddress} />
+              <CopyField className="mt-4" label={practice ? "Practice address (not a real address)" : `Deposit address (${chain})`} value={payment.depositAddress} />
               {payment.depositMemo && (
                 <>
                   <CopyField className="mt-3" label="Memo (required)" value={payment.depositMemo} />

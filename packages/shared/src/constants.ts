@@ -10,6 +10,14 @@ export const INTENTS_CONTRACT = "intents.near";
 export const INTENTS_APP_URL = "https://app.near-intents.org";
 export const EXPLORER_TX_URL = "https://nearblocks.io/txns/";
 
+/**
+ * Demo mode and the in-browser sandbox hand out deposit addresses that start with this.
+ * The hyphens make them invalid on every chain, so no wallet or exchange can send real
+ * money to one by mistake.
+ */
+export const DEMO_DEPOSIT_PREFIX = "DEMO-NOT-REAL-";
+export const isDemoDepositAddress = (address: string | null | undefined): boolean => !!address?.startsWith(DEMO_DEPOSIT_PREFIX);
+
 /** Default ports used by `npm run demo`. */
 export const API_PORT = 8787;
 export const WEB_PORT = 5173;

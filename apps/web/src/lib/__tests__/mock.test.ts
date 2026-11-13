@@ -74,7 +74,8 @@ describe("mock API conforms to the shared contract", () => {
     const registered = await ok(S.Order, "POST", `/orders/${id}/buyer`, { buyerPk: key.publicKey, refundAccount: "0x8ba1f109551bd432803012645ac136ddd64dba72" });
     expect(registered.status).toBe("Created");
     const real = await ok(S.QuoteResponse, "POST", `/orders/${id}/quote`, { originAsset: asset, refundTo: "0x8ba1f109551bD432803012645Ac136ddd64DBA72", dry: false });
-    expect(real.depositAddress).toMatch(/^0x[0-9a-f]{40}$/);
+    // Sandbox addresses are invalid on every chain, so real money can't be sent to them.
+    expect(real.depositAddress).toMatch(/^DEMO-NOT-REAL-[0-9a-f]{16}$/);
     expect(real.order.payment?.status).toBe("PENDING_DEPOSIT");
     const deposited = await ok(S.Order, "POST", `/orders/${id}/deposit`, { txHash: "0xabc123def4567890" });
     expect(deposited.payment?.status).toBe("KNOWN_DEPOSIT_TX");

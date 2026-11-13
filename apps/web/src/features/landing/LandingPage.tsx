@@ -247,7 +247,7 @@ function LiveStats() {
           <h2 id="stats-heading" className="text-xs font-semibold tracking-wide text-text-2 uppercase">
             Live numbers
           </h2>
-          {demoMode && <span className="ml-auto text-xs text-text-3">Demo data</span>}
+          {demoMode && <span className="ml-auto text-xs font-medium text-waiting">Demo data, not real orders</span>}
         </div>
         <dl className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {stats.map((s) => (

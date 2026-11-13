@@ -1,12 +1,13 @@
 // Demo mode 1Click: a believable token list, quotes at ~1.03% over the
-// price for stablecoins, random deposit addresses, and a status that moves
+// price for stablecoins, deposit addresses no wallet accepts
+// (DEMO_DEPOSIT_PREFIX, so real money can't be sent), and a status that moves
 // PENDING_DEPOSIT -> KNOWN_DEPOSIT_TX -> PROCESSING -> SUCCESS ~10 s after a
 // deposit is submitted. On SUCCESS it "delivers" USDC to the fake escrow
 // with msg = customRecipientMsg, exactly like the real flow.
 import { randomBytes } from "node:crypto";
-import { USDC_NEAR_ASSET } from "@doorstep/shared";
+import { DEMO_DEPOSIT_PREFIX, USDC_NEAR_ASSET } from "@doorstep/shared";
 import { AppError } from "../errors";
-import { b58encode, fakeTxHash, unitsToDecimal } from "../util";
+import { fakeTxHash, unitsToDecimal } from "../util";
 import type { OneClick, OneClickQuoteRequest, OneClickQuoteResponse, OneClickStatus, OneClickToken } from "./client";
 
 export const DEMO_TOKENS: OneClickToken[] = [
@@ -41,13 +42,9 @@ interface FakeSwap {
   originTxHash: string | null;
 }
 
-function fakeAddress(chain: string): string {
-  if (chain === "sol") return b58encode(randomBytes(32));
-  if (chain === "btc") return `bc1q${randomBytes(19).toString("hex").slice(0, 38)}`;
-  if (chain === "tron") return `T${b58encode(randomBytes(24)).slice(0, 33)}`;
-  if (chain === "near") return randomBytes(32).toString("hex");
-  if (chain === "doge") return `D${b58encode(randomBytes(24)).slice(0, 33)}`;
-  return `0x${randomBytes(20).toString("hex")}`;
+/** Never a real address: invalid on every chain, so nobody can pay into it. */
+function fakeAddress(): string {
+  return `${DEMO_DEPOSIT_PREFIX}${randomBytes(8).toString("hex")}`;
 }
 
 export class FakeOneClick implements OneClick {
@@ -85,7 +82,7 @@ export class FakeOneClick implements OneClick {
       ...(req.dry
         ? {}
         : {
-            depositAddress: fakeAddress(token.blockchain),
+            depositAddress: fakeAddress(),
             deadline: req.deadline,
             timeWhenInactive: req.deadline,
           }),

@@ -63,7 +63,8 @@ describe("demo mode end to end over HTTP", () => {
     expect(dry.depositAddress).toBeNull();
 
     const real = QuoteResponse.parse((await app.inject({ method: "POST", url: `/orders/${id}/quote`, payload: { originAsset: BASE_USDC, refundTo: "0x8ba1f109551bd432803012645ac136ddd64dba72", dry: false } })).json());
-    expect(real.depositAddress).toMatch(/^0x[0-9a-f]{40}$/);
+    // Demo addresses are invalid on every chain, so real money can't be sent to them.
+    expect(real.depositAddress).toMatch(/^DEMO-NOT-REAL-[0-9a-f]{16}$/);
     expect(real.order.payment?.status).toBe("PENDING_DEPOSIT");
 
     const dep = Order.parse((await app.inject({ method: "POST", url: `/orders/${id}/deposit`, payload: { txHash: "0xabc123abc123abc123" } })).json());
