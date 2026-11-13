@@ -17,8 +17,9 @@ npm install
 npm run dev:mock
 ```
 
-Open http://localhost:5173. A yellow bar says **“Demo mode — no real money
-moves”**. Everything runs in your browser against an in-browser copy of the API
+Open http://localhost:5173. A yellow bar says **“Demo mode — practice only,
+don't send real money”**. Deposit addresses start with `DEMO-NOT-REAL-` and are
+invalid on every chain. Everything runs in your browser against an in-browser copy of the API
 (`src/lib/mock`), seeded with the shop **Eraya Foods (demo)**.
 
 Click through the whole flow in about two minutes:

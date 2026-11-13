@@ -1,3 +1,42 @@
+# Mainnet test results
+
+## 13–14 Nov: first orders through the app
+
+Both orders were placed through the web app and the backend in live mode, on the
+same escrow. The shop account is `0xeraya.near` (Eraya Foods, with their
+permission). The buyer paid with USDC on Base, withdrawn straight from an
+exchange to the 1Click deposit address. All times are IST.
+
+### Order 2: the full happy path, with the checker key (0.20 USDC)
+
+| Step | Time | Transaction | Result |
+| --- | --- | --- | --- |
+| `create_order` (relayer) | 23:48 | [AwM3vP7c…iA9x](https://nearblocks.io/txns/AwM3vP7cM2g8qAB1wh64Y7w2ZfTwk13fTRxkC1RFiA9x) | `order_created`, seller `0xeraya.near` |
+| Buyer pays 0.202064 USDC on Base | 23:50 | [0x585066f7…377a](https://basescan.org/tx/0x585066f748d626ecb2704fe8edb6a9b880e33f18be6bf4dfb39adee85115377a) | 1Click `SUCCESS`, 0.2 USDC out |
+| 1Click delivery to the escrow | 23:50 | [6MqgmzSF…6M](https://nearblocks.io/txns/6MqgmzSFGbNQvTk1g9rTvwnrE2btptC86A21zi8eb76M) | **Funded**, paid 200000 |
+| `mark_shipped("hand")` | 23:52 | [HmTwuwvM…d6Ui](https://nearblocks.io/txns/HmTwuwvMQg4XuBEDaxLsAD9KrxLwY9fkkXDsNck7d6Ui) | Shipped |
+| `confirm_by_checker` (6-digit code typed by the shop) | 23:52 | [HJ9bBhg3…Q3ow](https://nearblocks.io/txns/HJ9bBhg3aG1nJZJrvRLQaGVFPiMUq71LLhCMxuBsQ3ow) | **Delivered**, proof `Checker { courier_ref: "hand" }` |
+| `release` (scheduler, after the 10-minute window) | 00:03 | [8SKBPrKJ…1eKv](https://nearblocks.io/txns/8SKBPrKJ2cje2XMjqCzvEa3FJUuryPpcS7a4nMdb1eKv) | `order_released` → `ft_transfer` → `mt_mint` → `payout_done` |
+
+Check: `intents.near` `mt_balance_of("0xeraya.near", USDC)` = 200000 after the release.
+
+### Order 3: complaint and owner refund (1.00 USDC)
+
+| Step | Time | Transaction | Result |
+| --- | --- | --- | --- |
+| `create_order` | 00:20 | [3wXxDRdK…bSKa](https://nearblocks.io/txns/3wXxDRdKJHKDyBfwZVnYXXcwzmPkfU8F14x5G928bSKa) | Created |
+| Buyer pays on Base | 00:22 | [0xdd8e1afd…0f93](https://basescan.org/tx/0xdd8e1afd1126267f32a5770d8dff7bb8b8c66e9dffd0fbe360b3f6a9b2e40f93) | 1Click `SUCCESS`, 1.0 USDC out |
+| 1Click delivery to the escrow | 00:22 | [8DrdKmBe…StwG](https://nearblocks.io/txns/8DrdKmBeiftckPvdEDoRRemySUAmkNx3xhTF8M84StwG) | **Funded** |
+| `confirm_by_checker` | 00:24 | [HBr99kyx…UTkw](https://nearblocks.io/txns/HBr99kyxmsctyzFgyMzePkdKjTmnyYRaMLN9DYUnXTkw) | Delivered |
+| `raise_complaint` (buyer signature, inside the window) | 00:24 | [9T8nVJoX…6jzg](https://nearblocks.io/txns/9T8nVJoXi8F5dy5FHiZLfDpbzSEmVpCfmBK8zLwW6jzg) | **Disputed**; the scheduler doesn't release it |
+| `resolve(3, to_seller: false)` (owner, near-cli) | 00:27 | [BwrXwtUW…ZjLf](https://nearblocks.io/txns/BwrXwtUWTsynCAhm151kWYmNWFttPEQyxZZTLCn9ZjLf) | `dispute_resolved` → `order_refunded` → `ft_transfer` → `mt_mint` → `payout_done`; **Refunded** |
+
+Check: the buyer's refund account (an EVM-style `0x…` account in NEAR Intents)
+holds 1000000 USDC units after the refund. So `intents.near` accepts lowercase
+`0x` account ids as recipients.
+
+---
+
 # Thursday go/no-go test: results
 
 **Result: GO.** Run on NEAR mainnet, Thursday 12 Nov 2026, 11:40–12:23 UTC.
@@ -98,10 +137,13 @@ Logs from the `release` transaction, in order:
 
 ## Not tested yet
 
+As of 14 Nov: `confirm_by_checker`, `raise_complaint` and `resolve` have now run
+on mainnet (orders 2 and 3 above). Still open:
+
 - Seller withdrawal from NEAR Intents to another chain: the last step of the demo.
-- `refund` after the deadline, `raise_complaint` and `resolve`, the checker signature (`confirm_by_checker`), parked payments and `refund_unmatched`, and the `Direct` payout mode.
+- `refund` after the deadline, parked payments and `refund_unmatched`, and the `Direct` payout mode.
 - Paying from Arbitrum or any non-USDC token.
-- Refunds to a buyer with no NEAR account: which account id to credit is still an open question in the build plan.
+- Refunds to a buyer with no NEAR account: answered in practice by order 3, where the refund went to an EVM-style `0x…` account inside NEAR Intents.
 
 ## Next
 

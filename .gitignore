@@ -11,3 +11,4 @@ data/
 *.sqlite-*
 coverage/
 .env.local
+.DS_Store

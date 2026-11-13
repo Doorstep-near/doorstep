@@ -42,8 +42,9 @@ Every push to `main` redeploys both services.
 ## Things to know
 
 - **The free API sleeps after about 15 minutes with no visits.** The next visit wakes it, which takes up to a minute.
-  - Open the site a few minutes before you show it.
-  - To keep it awake, a free uptime pinger such as UptimeRobot can call `/health` every 10 minutes.
+  - The GitHub workflow `.github/workflows/keep-demo-awake.yml` calls `/health` every 10 minutes until 25 Nov 2026. GitHub runs scheduled jobs late at busy times, so open the site a few minutes before you show it anyway.
+  - Actions minutes are free for public repositories. On a private one, every run counts against the free monthly minutes.
+- **Demo deposit addresses are fake on purpose.** They start with `DEMO-NOT-REAL-`, are invalid on every chain, and the payment screen warns in red. Real money can't be sent to them by mistake.
 - **The demo data lives in memory.** It resets whenever the API restarts or sleeps.
 - **Everyone shares one demo shop.** Visitors can see each other's test orders.
 - **This setup is demo only.** Real orders (live mode) need the relayer and checker keys. Those run on your own machine for now; see `services/api/README.md`.

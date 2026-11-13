@@ -18,5 +18,5 @@ Step 8: Scheduler (every minute, 3 s in demo): releases Delivered orders after t
 Tests: two concurrent ticks (and two schedulers) -> exactly one release; no early release; follows a chain Disputed; refund once with 100 Tgas; Created -> Expired; Delivered never refunded; payment polling.
 Step 9: GET /orders/:id and /seller/orders/:id merge DB + get_order + 1Click status (5 s caches); /seller/orders refreshes stale active orders; /seller/summary reads intents.near mt_balance_of for the shop.
 Tests: chain Funded shows up on GET; summary held/intents balance.
-Step 10: README (demo first, then live setup, route table, tests, code map); every new env var documented in .env.example; scripts/add-relayer-key.sh (not run; it asks before sending the add-key transaction).
+Step 10: README (demo first, then live setup, route table, tests, code map); every new env var documented in .env.example; scripts/add-relayer-key.sh (it asks before sending the add-key transaction; run on 13 Nov, and the key was checked on chain).
 Checked by hand: live mode boots against mainnet read-only (checker key matches, USDC registered, /tokens and a dry 1Click quote work, intents balance read); demo boots via npm run dev:demo with CORS for the web app.
