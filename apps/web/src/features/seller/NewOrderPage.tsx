@@ -115,7 +115,9 @@ const FIELD_ORDER: FieldKey[] = ["item", "note", "price", "phone", "method", "ad
 export default function NewOrderPage() {
   useDocumentTitle("New order");
   const { inrPerUsd } = useAppSettings();
-  const shopName = useSellerMe().data?.name ?? "Your shop";
+  const me = useSellerMe().data;
+  const shopName = me?.name ?? "Your shop";
+  const maxUnits = me?.maxPriceUnits ? BigInt(me.maxPriceUnits) : null;
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(initialForm);
@@ -212,7 +214,11 @@ export default function NewOrderPage() {
                 label="Price"
                 error={errors.price}
                 aside={priceUnits ? <span className="tabular">≈ {inrEstimate(priceUnits, inrPerUsd)}</span> : null}
-                hint="You receive exactly this in USDC. Minimum 0.10."
+                hint={
+                  maxUnits && priceUnits && BigInt(priceUnits) > maxUnits
+                    ? `During the beta, new shops can take orders up to ${Number(maxUnits) / 1e6} USDC.`
+                    : `You receive exactly this in USDC. Minimum 0.10${maxUnits ? `, beta maximum ${Number(maxUnits) / 1e6}` : ""}.`
+                }
               >
                 {(a) => (
                   <Input

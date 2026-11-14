@@ -17,6 +17,8 @@ export interface Merchant {
   /** Pickup address and phone, needed only for Borzo bookings. */
   address: string;
   phone: string;
+  /** Shops that signed up with a NEAR wallet: beta limits apply, and there's no seller token. */
+  beta?: boolean;
 }
 
 const MerchantEntry = z.object({
@@ -73,6 +75,14 @@ export interface Config {
   merchantsFile: string;
   /** Extra shops from MERCHANTS_FILE. Use allMerchants() for the full list. */
   merchants: Merchant[];
+  /** NEAR wallet sign-in: the NEP-413 "recipient" wallets show, and how long a session lasts. */
+  authRecipient: string;
+  sessionTtlMs: number;
+  /** Beta limits for shops that signed up themselves. */
+  betaMaxPriceUnits: string;
+  betaMaxOpenOrders: number;
+  /** Cap on new on-chain orders per hour across all shops (each costs the relayer gas and storage). */
+  maxChainOrdersPerHour: number;
   inrPerUsd: number;
   dbPath: string;
   network: "mainnet" | "testnet";
@@ -134,6 +144,11 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     // Extra shops also work in demo mode (payouts there are fake), e.g. to show two shops side by side.
     merchantsFile: str(env, "MERCHANTS_FILE") ? fromRoot(str(env, "MERCHANTS_FILE")) : "",
     merchants: str(env, "MERCHANTS_FILE") ? loadMerchants(fromRoot(str(env, "MERCHANTS_FILE"))) : [],
+    authRecipient: str(env, "AUTH_RECIPIENT", "Doorstep"),
+    sessionTtlMs: num(env, "SESSION_TTL_DAYS", 30) * 24 * 3600_000,
+    betaMaxPriceUnits: String(Math.round(num(env, "BETA_MAX_PRICE_USDC", 25) * 1_000_000)),
+    betaMaxOpenOrders: num(env, "BETA_MAX_OPEN_ORDERS", 10),
+    maxChainOrdersPerHour: num(env, "MAX_CHAIN_ORDERS_PER_HOUR", 30),
     inrPerUsd: num(env, "INR_PER_USD", 84.2),
     dbPath: demoMode ? ":memory:" : fromRoot(str(env, "DB_PATH", "data/doorstep.sqlite")),
     network,

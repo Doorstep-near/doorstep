@@ -173,7 +173,46 @@ CREATE TABLE IF NOT EXISTS claims (
   key TEXT PRIMARY KEY,
   until INTEGER NOT NULL
 );
+
+-- Shops that signed up themselves with a NEAR wallet (shops from .env or MERCHANTS_FILE aren't stored here).
+CREATE TABLE IF NOT EXISTS merchants (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  account TEXT NOT NULL UNIQUE,
+  area TEXT,
+  created_at INTEGER NOT NULL
+);
+
+-- Seller sessions from wallet sign-in. Only a hash of the token is stored.
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  account TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+
+-- One-time sign-in challenges (NEP-413 nonces).
+CREATE TABLE IF NOT EXISTS auth_nonces (
+  nonce TEXT PRIMARY KEY,
+  expires_at INTEGER NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0
+);
 `;
+
+export interface MerchantRow {
+  id: string;
+  name: string;
+  account: string;
+  area: string | null;
+  createdAt: number;
+}
+
+export interface SessionRow {
+  tokenHash: string;
+  account: string;
+  createdAt: number;
+  expiresAt: number;
+}
 
 const snake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -309,6 +348,54 @@ export class Db {
   }
 
   // --------------------------------------------------------------------- txs
+
+  // ------------------------------------------------------------ shops & sign-in
+
+  insertMerchant(m: MerchantRow) {
+    this.sql.prepare("INSERT INTO merchants (id, name, account, area, created_at) VALUES (?, ?, ?, ?, ?)").run(m.id, m.name, m.account, m.area, m.createdAt);
+  }
+
+  getMerchantByAccount(account: string): MerchantRow | undefined {
+    return fromRow<MerchantRow>(this.sql.prepare("SELECT * FROM merchants WHERE account = ?").get(account));
+  }
+
+  listMerchants(): MerchantRow[] {
+    return this.sql
+      .prepare("SELECT * FROM merchants ORDER BY created_at")
+      .all()
+      .map((r) => fromRow<MerchantRow>(r)!);
+  }
+
+  putSession(s: SessionRow) {
+    this.sql.prepare("INSERT INTO sessions (token_hash, account, created_at, expires_at) VALUES (?, ?, ?, ?)").run(s.tokenHash, s.account, s.createdAt, s.expiresAt);
+  }
+
+  getSession(tokenHash: string): SessionRow | undefined {
+    return fromRow<SessionRow>(this.sql.prepare("SELECT * FROM sessions WHERE token_hash = ?").get(tokenHash));
+  }
+
+  deleteSession(tokenHash: string) {
+    this.sql.prepare("DELETE FROM sessions WHERE token_hash = ?").run(tokenHash);
+  }
+
+  putNonce(nonce: string, expiresAt: number) {
+    this.sql.prepare("INSERT INTO auth_nonces (nonce, expires_at) VALUES (?, ?)").run(nonce, expiresAt);
+    // Housekeeping: drop challenges that expired over a day ago.
+    this.sql.prepare("DELETE FROM auth_nonces WHERE expires_at < ?").run(expiresAt - 24 * 3600_000);
+  }
+
+  /** True if the nonce was issued, unused and unexpired; marks it used (atomic). */
+  useNonce(nonce: string, now: number): boolean {
+    return this.sql.prepare("UPDATE auth_nonces SET used = 1 WHERE nonce = ? AND used = 0 AND expires_at > ?").run(nonce, now).changes === 1;
+  }
+
+  nonceIssued(nonce: string, now: number): boolean {
+    return !!this.sql.prepare("SELECT 1 FROM auth_nonces WHERE nonce = ? AND used = 0 AND expires_at > ?").get(nonce, now);
+  }
+
+  countTxsSince(kind: TxKind, since: number): number {
+    return (this.sql.prepare("SELECT COUNT(*) AS n FROM txs WHERE kind = ? AND at >= ?").get(kind, since) as { n: number }).n;
+  }
 
   addTx(t: TxRow) {
     this.sql.prepare("INSERT OR IGNORE INTO txs (order_id, kind, hash, at, url) VALUES (?, ?, ?, ?, ?)").run(t.orderId, t.kind, t.hash, t.at, t.url);

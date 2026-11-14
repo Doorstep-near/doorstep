@@ -583,7 +583,7 @@ function config(): AppConfig {
     complaintWindowMs: COMPLAINT_WINDOW_MS,
     inrPerUsd: INR_PER_USD,
     explorerTxUrl: "https://nearblocks.io/txns/",
-    intentsAppUrl: "https://app.near-intents.org",
+    intentsAppUrl: "https://near.com",
     webUrl: webUrl(),
   };
 }
@@ -616,7 +616,7 @@ function summary(store: Store): SellerSummary {
       disputed: by("Disputed").length,
       completed: by("Released", "Refunded", "Expired").length,
     },
-    intentsAppUrl: "https://app.near-intents.org",
+    intentsAppUrl: "https://near.com",
   };
 }
 
@@ -723,7 +723,7 @@ route("GET", "/seller/orders", (c) => {
 });
 route("GET", "/seller/orders/:id", (c) => entry(c).order);
 route("GET", "/seller/summary", (c) => summary(c.store));
-route("GET", "/seller/me", () => ({ id: "main", name: SHOP.name, account: SHOP.account }));
+route("GET", "/seller/me", () => ({ id: "main", name: SHOP.name, account: SHOP.account, beta: false, maxPriceUnits: null }));
 route(
   "POST",
   "/seller/orders/:id/ship/quote",

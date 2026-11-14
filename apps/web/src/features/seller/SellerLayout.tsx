@@ -4,7 +4,7 @@ import { ArrowUpRight, Globe, LayoutDashboard, LogOut, Menu, Plus, Wallet, type 
 import { useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { IconButton, Logo, Sheet, ThemeToggle, buttonClass } from "../../components/ui";
-import { sellerToken } from "../../lib/api";
+import { api, sellerToken } from "../../lib/api";
 import { useAppSettings, useSellerMe } from "../../lib/query";
 import { useUnauthorizedRedirect } from "./sellerUtils";
 
@@ -109,6 +109,8 @@ function SellerShell() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const signOut = () => {
+    // Ends a wallet session on the server too (a seller token just gets forgotten here).
+    void api.seller.auth.logout().catch(() => {});
     sellerToken.clear();
     qc.removeQueries({ queryKey: ["seller"] });
     setMenuOpen(false);

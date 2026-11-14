@@ -27,6 +27,8 @@ import {
 } from "@doorstep/shared";
 import { borzoStage, deliveryStatus, dropPoint, type Borzo, type BorzoOrder, type BorzoOrderRequest } from "./borzo/client";
 import { CHECKER_REF_RE, type Checker } from "./checker";
+import { SellerAuth } from "./auth/near";
+import type { AccessKeyChecker } from "./near/rpc";
 import { allMerchants, type Config, type Merchant } from "./config";
 import type { Db, OrderRow, PaymentRow } from "./db";
 import { verifyEd25519 } from "./ed25519";
@@ -56,6 +58,8 @@ export interface Deps {
   checker: Checker;
   now: () => number;
   log: Logger;
+  /** Checks NEAR access keys for wallet sign-in; null/absent in demo mode (no network). */
+  accessKey?: AccessKeyChecker | null;
 }
 
 export const MIN = 60_000;
@@ -99,8 +103,12 @@ export class OrderService {
   private tokenCache: { at: number; raw: OneClickToken[] } | null = null;
   private registering = new Map<string, Promise<void>>();
 
+  /** Seller sign-in (NEAR wallets) and the full list of shops. */
+  readonly auth: SellerAuth;
+
   constructor(private d: Deps) {
     this.windowMs = d.config.complaintWindowMs;
+    this.auth = new SellerAuth({ config: d.config, db: d.db, now: () => this.now, accessKey: d.accessKey ?? null, configShops: () => allMerchants(d.config) });
   }
 
   private get now() {
@@ -200,7 +208,7 @@ export class OrderService {
   }
 
   merchantByAccount(account: string): Merchant | undefined {
-    return allMerchants(this.d.config).find((m) => m.account === account);
+    return this.auth.shopByAccount(account);
   }
 
   /** Like must(), but another shop's order looks exactly like a missing one. */
@@ -294,6 +302,13 @@ export class OrderService {
     const now = this.now;
     if (deliverBy < now + 2 * 60 * MIN - MIN) fail("invalid_input", "deliverBy must be at least 2 hours from now");
     if (deliverBy > now + 30 * 24 * 60 * MIN) fail("invalid_input", "deliverBy must be at most 30 days from now");
+    if (m.beta) {
+      // Shops that signed up themselves start with small limits while Doorstep is in beta.
+      const max = BigInt(this.d.config.betaMaxPriceUnits);
+      if (BigInt(req.priceUnits) > max) fail("invalid_input", `During the beta, new shops can take orders up to ${Number(max) / 1e6} USDC`);
+      const open = this.d.db.listOrders(["Draft", "Created"]).filter((r) => r.shopAccount === m.account).length;
+      if (open >= this.d.config.betaMaxOpenOrders) fail("rate_limited", `During the beta, a shop can have up to ${this.d.config.betaMaxOpenOrders} unpaid orders at a time`);
+    }
     const row: OrderRow = {
       id: randomId(12),
       chainOrderId: null,
@@ -587,6 +602,10 @@ export class OrderService {
     if (row.buyerPk && row.chainOrderId) return this.view(await this.refresh(row)); // same key: idempotent
     if (row.status !== "Draft") fail("invalid_state", `Order is ${row.status}`);
     if (row.deliverBy <= this.now + MIN) fail("invalid_state", "This order's delivery deadline has passed; ask the shop for a new link");
+    // Each on-chain order costs the relayer gas and storage; cap how many start per hour.
+    if (this.d.db.countTxsSince("create", this.now - 60 * MIN) >= this.d.config.maxChainOrdersPerHour) {
+      fail("rate_limited", "Doorstep is busy right now. Please try again in a few minutes.");
+    }
     // Claim the Draft in SQLite first, so two requests can't create two chain orders.
     if (!row.buyerPk) {
       const won = this.d.db.updateOrderIf(id, { status: "Draft", buyerPkNull: true }, { buyerPk: req.buyerPk, buyerRefund: req.refundAccount });

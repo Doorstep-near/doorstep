@@ -11,7 +11,7 @@ import { loadSignerFile, newSigner, type Ed25519Signer } from "./ed25519";
 import { LiveEscrow, type Escrow } from "./near/escrow";
 import { FakeEscrow } from "./near/fake-escrow";
 import { createNearRelayer, MissingRelayer, type Relayer } from "./near/relayer";
-import { rpcViewer } from "./near/rpc";
+import { rpcAccessKey, rpcViewer, type AccessKeyChecker } from "./near/rpc";
 import { LiveOneClick } from "./oneclick/client";
 import { FakeOneClick } from "./oneclick/fake";
 import { Scheduler } from "./scheduler";
@@ -56,6 +56,7 @@ export async function createDemo(config: Config, opts: { now?: () => number; log
 
 export interface LiveOverrides {
   fetch?: typeof fetch;
+  accessKey?: AccessKeyChecker;
   relayer?: Relayer;
   checkerSigner?: Ed25519Signer | null;
   escrow?: Escrow;
@@ -116,6 +117,7 @@ export async function createLive(config: Config, o: LiveOverrides = {}): Promise
     checker: new Checker(checkerSigner, escrow, now),
     now,
     log: o.log ?? consoleLogger,
+    accessKey: o.accessKey ?? rpcAccessKey(config.rpcUrl, fetchFn),
   };
   if (config.ship24ApiKey) deps.trackers = ship24Trackers(config.ship24ApiKey, fetchFn);
   if (!config.borzoAuthToken) warnings.push("BORZO_AUTH_TOKEN is not set; Borzo shipping is off (tracking and hand delivery still work).");

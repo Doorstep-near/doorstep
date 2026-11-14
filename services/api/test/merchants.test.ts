@@ -58,8 +58,8 @@ describe("shops file", () => {
 describe("two shops on one Doorstep", () => {
   it("each token signs in as its own shop", async () => {
     const t = await makeLive({ config: { merchants: [SECOND] } });
-    expect(SellerMe.parse((await t.app.inject({ url: "/seller/me", headers: sellerAuth })).json())).toEqual({ id: "main", name: "Test Shop", account: SHOP });
-    expect(SellerMe.parse((await t.app.inject({ url: "/seller/me", headers: secondAuth })).json())).toEqual({ id: "spice", name: "Spice Route", account: SECOND.account });
+    expect(SellerMe.parse((await t.app.inject({ url: "/seller/me", headers: sellerAuth })).json())).toEqual({ id: "main", name: "Test Shop", account: SHOP, beta: false, maxPriceUnits: null });
+    expect(SellerMe.parse((await t.app.inject({ url: "/seller/me", headers: secondAuth })).json())).toEqual({ id: "spice", name: "Spice Route", account: SECOND.account, beta: false, maxPriceUnits: null });
     expect((await t.app.inject({ url: "/seller/me", headers: { authorization: "Bearer nope-nope-nope-nope" } })).statusCode).toBe(401);
     expect((await t.app.inject({ url: "/seller/me" })).statusCode).toBe(401);
   });

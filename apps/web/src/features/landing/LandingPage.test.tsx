@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { renderRoute } from "../../test/utils";
 
@@ -21,6 +22,16 @@ describe("LandingPage", () => {
     expect(screen.getByRole("heading", { name: "What our checker still holds" })).toBeInTheDocument();
     // In the sandbox there's a shortcut to the demo pay link.
     expect(screen.getByRole("link", { name: /see the buyer's pay page/i })).toHaveAttribute("href", "/pay/demo-mom-gift");
+  });
+
+  it("in the demo, Try the demo opens the demo sign-in and the real Sign in / Start selling are hidden", async () => {
+    const user = userEvent.setup();
+    renderRoute(<LandingPage />, { path: "/", url: "/", extraRoutes: [{ path: "/seller/login", element: <p>demo sign-in page</p> }] });
+    await within(screen.getByRole("region", { name: "Live numbers" })).findByText("8");
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Start selling" })).not.toBeInTheDocument();
+    await user.click(screen.getAllByRole("button", { name: "Try the demo" })[0]!);
+    expect(await screen.findByText("demo sign-in page")).toBeInTheDocument();
   });
 
   it("shows live numbers from GET /stats", async () => {

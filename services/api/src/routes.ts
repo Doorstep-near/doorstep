@@ -13,6 +13,8 @@ import {
   ShipQuoteRequest,
   ShipRequest,
   SignatureRequest,
+  NearSignInRequest,
+  EvmSignInRequest,
   type AppConfig,
   type SellerMe,
 } from "@doorstep/shared";
@@ -54,22 +56,38 @@ export function registerRoutes(app: FastifyInstance, svc: OrderService, d: Deps,
   app.get("/tokens", async () => ({ tokens: await svc.tokens() }));
   app.get("/stats", async () => svc.stats());
 
+  // ------------------------------------------------- seller sign-in (public)
+
+  const bearer = (req: FastifyRequest) => {
+    const h = req.headers.authorization ?? "";
+    return h.startsWith("Bearer ") ? h.slice(7).trim() : "";
+  };
+  app.get("/seller/auth/challenge", async () => svc.auth.challenge());
+  app.post("/seller/auth/near", async (req) => svc.auth.signIn(parseBody(NearSignInRequest, req.body)));
+  app.post("/seller/auth/evm", async (req) => svc.auth.signInEvm(parseBody(EvmSignInRequest, req.body)));
+  app.post("/seller/auth/logout", async (req) => {
+    const token = bearer(req);
+    if (token) svc.auth.logout(token);
+    return { ok: true };
+  });
+
   // ---------------------------------------------------------------- seller
 
   app.register(async (seller) => {
     // Each shop has its own seller token; it only ever sees and changes its own orders.
+    // A request signs in with a seller token (shops we added) or a wallet session (shops that signed up).
     seller.addHook("onRequest", async (req) => {
-      const h = req.headers.authorization ?? "";
-      const token = h.startsWith("Bearer ") ? h.slice(7).trim() : "";
+      const token = bearer(req);
       let found: Merchant | undefined;
       // Compare against every shop (no early exit), so timing doesn't reveal which tokens exist.
       for (const m of allMerchants(config)) if (token && safeEqual(token, m.token) && !found) found = m;
+      if (!found && token) found = svc.auth.sessionShop(token);
       if (!found) throw new AppError("unauthorized", "Seller token missing or wrong");
       req.merchant = found;
     });
     const me = (req: FastifyRequest): Merchant => req.merchant!;
 
-    seller.get("/seller/me", async (req): Promise<SellerMe> => ({ id: me(req).id, name: me(req).name, account: me(req).account }));
+    seller.get("/seller/me", async (req): Promise<SellerMe> => svc.auth.me(me(req)));
 
     seller.post("/seller/orders", async (req, reply) => {
       const order = svc.createOrder(parseBody(CreateOrderRequest, req.body), me(req));

@@ -6,7 +6,9 @@ import { sellerToken } from "../../lib/api";
 import { mockSettings, resetMock } from "../../lib/mock";
 import NewOrderPage from "./NewOrderPage";
 import SellerDashboard from "./SellerDashboard";
+import SellerLogin from "./SellerLogin";
 import SellerOrderPage from "./SellerOrderPage";
+import SellerSignup from "./SellerSignup";
 
 // Route every request to the in-browser mock API.
 vi.mock("../../lib/env", async (orig) => ({ ...(await orig<typeof import("../../lib/env")>()), isMock: true }));
@@ -87,10 +89,28 @@ describe("SellerDashboard", () => {
   });
 });
 
+describe("demo sign-in and sign-up (practice)", () => {
+  it("labels the sign-in as the demo, fills in the demo token and offers no wallets", async () => {
+    sellerToken.clear();
+    renderRoute(<SellerLogin />, { path: "/seller/login", url: "/seller/login" });
+    expect(await screen.findByRole("heading", { name: "Demo sign-in" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Seller token")).toHaveValue("demo");
+    expect(screen.queryByRole("button", { name: /Continue with NEAR Mobile/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /MetaMask/ })).not.toBeInTheDocument();
+  });
+
+  it("points sign-up in the demo to the demo shop instead of wallets", () => {
+    renderRoute(<SellerSignup />, { path: "/seller/signup", url: "/seller/signup" });
+    expect(screen.getByText("This is the practice demo")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open the demo shop" })).toHaveAttribute("href", "/seller/login");
+    expect(screen.queryByRole("button", { name: /Create shop with/ })).not.toBeInTheDocument();
+  });
+});
+
 describe("shop identity", () => {
   it("names the signed-in shop (from its seller token) on the dashboard and in the buyer preview", async () => {
     const { api } = await import("../../lib/api");
-    const me = vi.spyOn(api.seller, "me").mockResolvedValue({ id: "spice", name: "Spice Route", account: "spice.near" });
+    const me = vi.spyOn(api.seller, "me").mockResolvedValue({ id: "spice", name: "Spice Route", account: "spice.near", beta: false, maxPriceUnits: null });
     const { unmount } = renderRoute(<SellerDashboard />, { path: "/seller", url: "/seller" });
     expect(await screen.findByText("Spice Route")).toBeInTheDocument();
     unmount();

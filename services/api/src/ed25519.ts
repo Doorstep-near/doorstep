@@ -12,13 +12,18 @@ export interface Ed25519Signer {
 
 /** Verifies a base64 signature over a UTF-8 message. Returns false on any malformed input. */
 export function verifyEd25519(nearPublicKey: string, message: string, signatureB64: string): boolean {
+  return verifyEd25519Bytes(nearPublicKey, Buffer.from(message, "utf8"), signatureB64);
+}
+
+/** Verifies a base64 signature over raw bytes (e.g. a NEP-413 hash). Returns false on any malformed input. */
+export function verifyEd25519Bytes(nearPublicKey: string, data: Uint8Array, signatureB64: string): boolean {
   try {
     const raw = b58decode(nearPublicKey.replace(/^ed25519:/, ""));
     if (raw.length !== 32) return false;
     const sig = Buffer.from(signatureB64, "base64");
     if (sig.length !== 64) return false;
     const key = createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: Buffer.from(raw).toString("base64url") }, format: "jwk" });
-    return verify(null, Buffer.from(message, "utf8"), key, sig);
+    return verify(null, data, key, sig);
   } catch {
     return false;
   }

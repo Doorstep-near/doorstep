@@ -136,6 +136,14 @@ export async function walletAddress(provider: Eip1193Provider): Promise<string> 
   return address;
 }
 
+/** personal_sign (EIP-191): the wallet signs a readable text message. Resolves to the 65-byte signature (0x...). */
+export async function signPersonalMessage(provider: Eip1193Provider, address: string, message: string): Promise<string> {
+  const hex = "0x" + Array.from(new TextEncoder().encode(message), (b) => b.toString(16).padStart(2, "0")).join("");
+  const sig = await provider.request({ method: "personal_sign", params: [hex, address] });
+  if (typeof sig !== "string" || !/^0x[0-9a-fA-F]{130}$/.test(sig)) throw new WalletError("Your wallet didn't return a signature. Please try again.");
+  return sig;
+}
+
 const errorCode = (e: unknown): number | undefined => {
   const err = e as { code?: unknown; data?: { originalError?: { code?: unknown } } } | null;
   // Some mobile wallets wrap the real code (4001, 4902) inside a generic -32603 error.

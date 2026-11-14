@@ -7,7 +7,7 @@ export const USDC_DECIMALS = 6;
 /** Where payouts and refunds are credited (the escrow's default `intents` account). */
 export const INTENTS_CONTRACT = "intents.near";
 /** Where a seller (or refunded buyer) withdraws from NEAR Intents to any chain. */
-export const INTENTS_APP_URL = "https://app.near-intents.org";
+export const INTENTS_APP_URL = "https://near.com"; // NEAR Intents moved here from app.near-intents.org
 export const EXPLORER_TX_URL = "https://nearblocks.io/txns/";
 
 /**
@@ -21,3 +21,9 @@ export const isDemoDepositAddress = (address: string | null | undefined): boolea
 /** Default ports used by `npm run demo`. */
 export const API_PORT = 8787;
 export const WEB_PORT = 5173;
+
+/** The text wallets show when a seller signs in. Costs nothing, moves no money. */
+export const NEAR_SIGN_IN_MESSAGE = "Sign in to Doorstep as a seller. This proves you own this account. It costs nothing and moves no money.";
+
+/** What an EVM wallet (MetaMask, ...) signs with personal_sign: the text plus our one-time challenge. */
+export const evmSignInMessage = (nonce: string, recipient: string) => `${NEAR_SIGN_IN_MESSAGE}\n\nApp: ${recipient}\nChallenge: ${nonce}`;

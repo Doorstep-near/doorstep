@@ -22,6 +22,10 @@
 //   GET  /seller/orders/:id               -> SellerOrder
 //   GET  /seller/summary                  -> SellerSummary
 //   GET  /seller/me                       -> SellerMe (the shop this seller token belongs to)
+//   GET  /seller/auth/challenge           -> AuthChallenge   (public; one-time nonce for NEAR wallet sign-in)
+//   POST /seller/auth/near  NearSignInRequest -> SellerSession (public; NEP-413 signed message; optional shop = sign-up)
+//   POST /seller/auth/evm   EvmSignInRequest  -> SellerSession (public; MetaMask & co. personal_sign)
+//   POST /seller/auth/logout               -> { ok: true }  (ends the session in the Authorization header)
 //   POST /seller/orders/:id/ship/quote    ShipQuoteRequest     -> ShipQuote      (Borzo price, no booking)
 //   POST /seller/orders/:id/ship          ShipRequest          -> SellerOrder    (books Borzo / records tracking / hand; calls mark_shipped)
 //   POST /seller/orders/:id/otp/verify    OtpVerifyRequest     -> SellerOrder    (checker signs + confirm_by_checker on success)
@@ -284,9 +288,63 @@ export type CreateOrderRequest = z.infer<typeof CreateOrderRequest>;
 export const SellerOrdersResponse = z.object({ orders: z.array(SellerOrder) });
 export type SellerOrdersResponse = z.infer<typeof SellerOrdersResponse>;
 
-/** The shop a seller token belongs to. Each shop sees only its own orders. */
-export const SellerMe = z.object({ id: z.string(), name: z.string(), account: NearAccountId });
+/** The shop a seller token or session belongs to. Each shop sees only its own orders. */
+export const SellerMe = z.object({
+  id: z.string(),
+  name: z.string(),
+  account: NearAccountId,
+  /** Shops that signed up with a NEAR wallet have beta limits; shops added by us don't. */
+  beta: z.boolean(),
+  /** Highest price per order for beta shops (USDC units), or null for no limit. */
+  maxPriceUnits: UsdcUnits.nullable(),
+});
 export type SellerMe = z.infer<typeof SellerMe>;
+
+/** What the wallet signs (NEP-413). The backend checks it was issued by us and not used before. */
+export const AuthChallenge = z.object({
+  /** 32 random bytes, standard base64. */
+  nonce: z.string(),
+  message: z.string(),
+  recipient: z.string(),
+  expiresAt: IsoTime,
+});
+export type AuthChallenge = z.infer<typeof AuthChallenge>;
+
+/** Shop details sent with a first sign-in (sign-up). */
+export const ShopSignUp = z.object({
+  name: z.string().trim().min(2, "Enter your shop's name").max(80),
+  area: z.string().trim().max(60).optional(),
+});
+
+export const NearSignInRequest = z.object({
+  accountId: NearAccountId,
+  publicKey: Ed25519PublicKey,
+  /** The wallet's NEP-413 signature (base64). */
+  signature: z.string().min(40).max(200),
+  nonce: z.string().min(40).max(60),
+  /** Present when creating a new shop (sign-up). */
+  shop: ShopSignUp.optional(),
+});
+export type NearSignInRequest = z.infer<typeof NearSignInRequest>;
+
+/** MetaMask & co.: personal_sign over evmSignInMessage(nonce, recipient). The address becomes the payout account. */
+export const EvmSignInRequest = z.object({
+  address: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "Not an EVM address"),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{130}$/, "Not a 65-byte signature"),
+  nonce: z.string().min(40).max(60),
+  shop: ShopSignUp.optional(),
+});
+export type EvmSignInRequest = z.infer<typeof EvmSignInRequest>;
+
+export const SellerSession = z.object({
+  /** Send as "Authorization: Bearer <token>", like a seller token. */
+  token: z.string(),
+  shop: SellerMe,
+  /** True when this sign-in created the shop. */
+  created: z.boolean(),
+});
+export type SellerSession = z.infer<typeof SellerSession>;
+export const OkResponse = z.object({ ok: z.literal(true) });
 
 export const SellerSummary = z.object({
   /** USDC currently held in escrow for this shop (Funded + Shipped + Delivered + Disputed). */

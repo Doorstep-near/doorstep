@@ -50,7 +50,7 @@ prepaid ones ([Razorpay](https://razorpay.com/blog/cash-on-delivery-and-the-chal
    complains inside the window, the money freezes, and the owner settles it.
 
 Payouts and refunds are credited inside **NEAR Intents**, so the shop (or the
-buyer) can withdraw to any chain from https://app.near-intents.org.
+buyer) can withdraw to any chain from https://near.com (the NEAR Intents app, formerly app.near-intents.org).
 
 ## Proven on NEAR mainnet
 
@@ -183,7 +183,7 @@ What you have to trust, stated plainly:
 - **Whoever holds the buyer's delivery pass can confirm delivery.** It works
   like a key: the buyer should show it only once the parcel is in their hands.
 - **Payouts and refunds land in NEAR Intents balances.** To move them out, the
-  recipient signs in at app.near-intents.org.
+  recipient signs in at near.com (formerly app.near-intents.org).
 - **Demo mode and the browser sandbox** give out deposit addresses that start
   with `DEMO-NOT-REAL-` and are invalid on every chain. The pages warn in red not
   to send real money.

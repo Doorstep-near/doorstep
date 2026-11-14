@@ -13,6 +13,7 @@ import NotFound from "./features/NotFound";
 // Seller app and proof page load on demand; the buyer path stays in the main bundle.
 const ProofPage = lazy(() => import("./features/proof/ProofPage"));
 const SellerLogin = lazy(() => import("./features/seller/SellerLogin"));
+const SellerSignup = lazy(() => import("./features/seller/SellerSignup"));
 const SellerLayout = lazy(() => import("./features/seller/SellerLayout"));
 const SellerDashboard = lazy(() => import("./features/seller/SellerDashboard"));
 const NewOrderPage = lazy(() => import("./features/seller/NewOrderPage"));
@@ -51,6 +52,7 @@ export const routes = [
       { path: "/confirm/:id", element: <ConfirmPage /> },
       { path: "/proof/:id", element: lazyPage(<ProofPage />) },
       { path: "/seller/login", element: lazyPage(<SellerLogin />) },
+      { path: "/seller/signup", element: lazyPage(<SellerSignup />) },
       {
         path: "/seller",
         element: lazyPage(<SellerLayout />),

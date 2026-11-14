@@ -57,6 +57,8 @@ export class StubChain {
   onCall: Record<string, (args: Record<string, unknown>) => unknown | Promise<unknown>> = {};
   nextId = 1;
   viewCount: Record<string, number> = {};
+  /** Access keys for wallet sign-in tests: "account|ed25519:..." -> kind. */
+  accessKeys = new Map<string, "full" | "function">();
 
   viewer: Viewer = async <T>(contract: string, method: string, args: Record<string, unknown>): Promise<T> => {
     this.viewCount[method] = (this.viewCount[method] ?? 0) + 1;
@@ -193,6 +195,7 @@ export async function makeLive(opts: { clock?: Clock; chain?: StubChain; config?
     fetch: apis.fn,
     now: clock.now,
     log: silentLogger,
+    accessKey: async (account, publicKey) => chain.accessKeys.get(`${account}|${publicKey}`) ?? "none",
   });
   const app = buildApp(wired);
   return { ...wired, app, chain, clock, apis };
