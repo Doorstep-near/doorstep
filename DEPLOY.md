@@ -1,4 +1,4 @@
-# Deploying the public demo
+# Deploying Doorstep (public demo and live app)
 
 The public demo runs on Render's free plan as two services from `render.yaml`:
 
@@ -47,4 +47,38 @@ Every push to `main` redeploys both services.
 - **Demo deposit addresses are fake on purpose.** They start with `DEMO-NOT-REAL-`, are invalid on every chain, and the payment screen warns in red. Real money can't be sent to them by mistake.
 - **The demo data lives in memory.** It resets whenever the API restarts or sleeps.
 - **Everyone shares one demo shop.** Visitors can see each other's test orders.
-- **This setup is demo only.** Real orders (live mode) need the relayer and checker keys. Those run on your own machine for now; see `services/api/README.md`.
+- **The demo is separate from the live app below.** Nothing in the demo touches real money or real keys.
+
+## Live app (real money, NEAR mainnet)
+
+`render.yaml` also defines the real app, using the deployed escrow, real 1Click deposits and real payouts:
+
+| Service | What it is | URL |
+| --- | --- | --- |
+| `doorstep-near-live-api` | The API on NEAR mainnet (Starter plan, 1 GB disk, Singapore) | https://doorstep-near-live-api.onrender.com |
+| `doorstep-near-live` | The web app, built against the live API | https://doorstep-near-live.onrender.com |
+
+It costs about $7.25 a month: the Starter instance plus a 1 GB disk. The static site is free. The API is paid because it needs the disk for its database, and it must never sleep: the scheduler releases payouts and refunds on time.
+
+### Set it up (once)
+
+1. In Render, add a payment method (**Account settings > Billing**).
+2. Push `render.yaml`. With Blueprint auto-sync on, Render creates both services. Otherwise open the Blueprint and click **Manual Sync**.
+3. Open `doorstep-near-live-api` > **Environment**:
+   - **Environment Variables > Add from .env:** paste these lines from your local `.env`: `ESCROW`, `RELAYER_ACCOUNT`, `SHOP_ACCOUNT`, `SHOP_NAME`, `SHOP_ADDRESS`, `SHOP_PHONE` and `SELLER_TOKEN`. Add `ONECLICK_JWT` or `ONECLICK_API_KEY` if you have one. Don't paste `API_PORT`, `WEB_URL`, `DB_PATH` or the key file paths: `render.yaml` sets those for Render.
+   - **Secret Files:** add `relayer.json` and `checker.json`. Paste the contents of `.keys/relayer.json` and `.keys/checker.json`. Render puts them in `/etc/secrets/`.
+   - Click **Save, rebuild, and deploy**.
+4. **Stop any live API on your own machine first.** Two backends that send with the same relayer key collide on transaction nonces.
+5. Check that it worked:
+   - https://doorstep-near-live-api.onrender.com/health returns `{"ok":true}`.
+   - `/config` shows `"demoMode":false` and `"network":"mainnet"`.
+   - The log has no `Checker key mismatch` and no `relayer` warning.
+
+**If Render renamed a service** because the name was taken, set `VITE_API_URL` on the live web app and `WEB_URL` on the live API to the real addresses, then redeploy both.
+
+### Things to know
+
+- **The database is on the disk,** at `/var/data/doorstep.sqlite`. It survives deploys and restarts.
+- **Deploys take the API down for about a minute.** A service with a disk can't run two copies at once.
+- **Secrets never go in the repo.** They live in the Render dashboard, as environment variables and Secret Files.
+- **Shops that sign up with a wallet have beta limits:** 25 USDC per order and 10 open orders. On top of that, there's a cap of 30 new on-chain orders an hour across all shops (`render.yaml`).

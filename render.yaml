@@ -1,6 +1,7 @@
-# Public demo on Render: the web app (static, on Render's CDN) and the API in
-# DEMO_MODE (fake chain, fake 1Click, mock courier: no keys, no real money).
-# Render > New > Blueprint > pick this repo. See DEPLOY.md.
+# Doorstep on Render (Render > New > Blueprint > pick this repo; see DEPLOY.md):
+# - Public demo: the web app (static, on Render's CDN) and the API in DEMO_MODE
+#   (fake chain, fake 1Click, mock courier: no keys, no real money).
+# - Live app: the same two pieces on NEAR mainnet with real money (further down).
 services:
   - type: web
     name: doorstep-near-api
@@ -35,3 +36,74 @@ services:
       # Public URL of the API above. Baked in at build time.
       - key: VITE_API_URL
         value: https://doorstep-near-api.onrender.com
+
+  # ------------------------------------------------------------------ live app (real money)
+  # The real thing on NEAR mainnet: the deployed escrow, real 1Click deposits, real payouts.
+  # Paid plan because it needs a disk for the database and must never sleep (the scheduler
+  # releases payouts and refunds on time). See "Live app" in DEPLOY.md.
+  # - Values with `sync: false` are typed in the Render dashboard, never committed.
+  # - The relayer and checker keys are Render Secret Files (Environment > Secret Files),
+  #   named relayer.json and checker.json; Render puts them in /etc/secrets/.
+  # - Only one backend may use the relayer key at a time: stop any local live API first.
+  - type: web
+    name: doorstep-near-live-api
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci --include=dev
+    startCommand: npm run start -w @doorstep/api
+    healthCheckPath: /health
+    disk:
+      name: doorstep-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NETWORK
+        value: mainnet
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: WEB_URL
+        value: https://doorstep-near-live.onrender.com
+      - key: DB_PATH
+        value: /var/data/doorstep.sqlite
+      - key: RELAYER_KEY_FILE
+        value: /etc/secrets/relayer.json
+      - key: CHECKER_KEY_FILE
+        value: /etc/secrets/checker.json
+      # 10 minutes while we test in public; 86400000 (24 h) for real use.
+      - key: COMPLAINT_WINDOW_MS
+        value: "600000"
+      # Beta limits for shops that sign up with a wallet.
+      - key: BETA_MAX_PRICE_USDC
+        value: "25"
+      - key: BETA_MAX_OPEN_ORDERS
+        value: "10"
+      - key: MAX_CHAIN_ORDERS_PER_HOUR
+        value: "30"
+      # Typed in the dashboard (the same values as your local .env).
+      - key: ESCROW
+        sync: false
+      - key: RELAYER_ACCOUNT
+        sync: false
+      - key: SHOP_ACCOUNT
+        sync: false
+      - key: SHOP_NAME
+        sync: false
+      - key: SELLER_TOKEN
+        sync: false
+      - key: ONECLICK_JWT
+        sync: false
+
+  - type: web
+    name: doorstep-near-live
+    runtime: static
+    buildCommand: npm ci --include=dev && npm run build:web
+    staticPublishPath: apps/web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # The live API above. Baked in at build time.
+      - key: VITE_API_URL
+        value: https://doorstep-near-live-api.onrender.com
