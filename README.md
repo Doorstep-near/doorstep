@@ -8,9 +8,11 @@ proven by the deadline, the buyer is refunded automatically. If something goes
 wrong after delivery, the buyer can complain within a set time window, and the
 contract owner decides who gets the money.
 
+- **Live app (NEAR mainnet, real money):** https://doorstep-near-live.onrender.com.
+  Shops sign up there with their wallet (see [Shops](#shops)).
 - **Hosted demo (demo mode, no real money):** https://doorstep-iug1.vercel.app
   (mirror: https://doorstep-near.onrender.com)
-- **Demo video:** _link added at submission_
+- **Demo video:** https://x.com/Doorstepnear/status/2121531765957566825
 - Built at **NEAR HACKATHON** (19 Oct to 14 Nov 2026) for the Real-World Money and Open Innovation tracks. All code was written during the hackathon; the first commit is 12 Nov 2026.
 
 ## The problem
@@ -58,6 +60,8 @@ Real orders with real USDC. The shop account `0xeraya.near` belongs to Eraya
 Foods (Delhi), who agreed to receive payments through Doorstep. These were small
 test orders placed by the team, not customer traction. Orders #4 and #6 (0.20
 USDC each) repeated the #2 path and are not listed; #5 was opened but never paid.
+Order #8 went to a second shop, ANKUSH EXPORTS: a test shop the team signed up
+with a Meteor wallet on the sign-up page.
 
 | Order | What it proves | Transactions |
 | --- | --- | --- |
@@ -65,6 +69,9 @@ USDC each) repeated the #2 path and are not listed; #5 was opened but never paid
 | **#2** (app, 13 Nov), 0.20 USDC, shop `0xeraya.near` | The whole app flow: paid from Base → Funded → handed over → **6-digit code countersigned by the checker key** → released automatically after the window | [create](https://nearblocks.io/txns/AwM3vP7cM2g8qAB1wh64Y7w2ZfTwk13fTRxkC1RFiA9x) · [Base payment](https://basescan.org/tx/0x585066f748d626ecb2704fe8edb6a9b880e33f18be6bf4dfb39adee85115377a) · [funded](https://nearblocks.io/txns/6MqgmzSFGbNQvTk1g9rTvwnrE2btptC86A21zi8eb76M) · [shipped](https://nearblocks.io/txns/HmTwuwvMQg4XuBEDaxLsAD9KrxLwY9fkkXDsNck7d6Ui) · [delivered](https://nearblocks.io/txns/HJ9bBhg3aG1nJZJrvRLQaGVFPiMUq71LLhCMxuBsQ3ow) · [released](https://nearblocks.io/txns/8SKBPrKJ2cje2XMjqCzvEa3FJUuryPpcS7a4nMdb1eKv) |
 | **#3** (app, 14 Nov), 1.00 USDC, shop `0xeraya.near` | **Buyer complaint inside the window** freezes the money; the **owner resolves it as a refund**; 1.00 USDC is credited back to the buyer in NEAR Intents | [create](https://nearblocks.io/txns/3wXxDRdKJHKDyBfwZVnYXXcwzmPkfU8F14x5G928bSKa) · [Base payment](https://basescan.org/tx/0xdd8e1afd1126267f32a5770d8dff7bb8b8c66e9dffd0fbe360b3f6a9b2e40f93) · [funded](https://nearblocks.io/txns/8DrdKmBeiftckPvdEDoRRemySUAmkNx3xhTF8M84StwG) · [delivered](https://nearblocks.io/txns/HBr99kyxmsctyzFgyMzePkdKjTmnyYRaMLN9DYUnXTkw) · [complaint](https://nearblocks.io/txns/9T8nVJoXi8F5dy5FHiZLfDpbzSEmVpCfmBK8zLwW6jzg) · [resolved, refunded](https://nearblocks.io/txns/BwrXwtUWTsynCAhm151kWYmNWFttPEQyxZZTLCn9ZjLf) |
 | **#7** (app, 14 Nov), 2.00 USDC, shop `0xeraya.near` — the order in the demo video | The full flow, filmed: paid from Base → Funded → handed over → 6-digit code → released automatically; 14 minutes from order to shop paid | [create](https://nearblocks.io/txns/4UwYzv1X9c4BTR3fE8kK9P8nCPLuiiqar4asdj7sHCPo) · [Base payment](https://basescan.org/tx/0x943324b4e64af1e6af89c33d5603f7a1767c2eec64c05e4a1d8467ed54eb4a69) · [funded](https://nearblocks.io/txns/9mCQoenBZy6kDADQhvkmZ6y28ut1Hp17jEENNWHobA8r) · [shipped](https://nearblocks.io/txns/GggmU25yHAxe2A4DjF3KaYYStrPzL7XqHAb8iUY2FeJw) · [delivered](https://nearblocks.io/txns/7r7YRrTAv6dkRU3g97RBNvu6Hx2qQhVVTjv181cvX1eQ) · [released](https://nearblocks.io/txns/DDzh22LQSB7HGebsRXYHHnuSM2qibSoauyUJH34moGHH) |
+| **#8** (app, 14 Nov), 0.20 USDC, shop ANKUSH EXPORTS | A **second shop that signed up with its own wallet** (Meteor, NEP-413): paid from Base → Funded → shipped → 6-digit code → released automatically to the wallet that signed up | [create](https://nearblocks.io/txns/3KzoJDLV6snCmzw2cvWhuBVi48jpzKuox8BffPo3mBnG) · [Base payment](https://basescan.org/tx/0x8a71ada7b580d0252c9540bd60ec36c4ad69e548b782500c5be5f6b9d3b3f683) · [funded](https://nearblocks.io/txns/3uLmomuULRrR5dnoqJ5zLLnutRQs3CxHkLLAztZmRNkD) · [shipped](https://nearblocks.io/txns/BGt4M6vLEyF16Hr5yQYn5TyMa62nRLHbWTKGvBJMak8z) · [delivered](https://nearblocks.io/txns/2dNgakqPgfjhLAX7aiqd4gsbJUzmQDCWpsBJMYQ4eThq) · [released](https://nearblocks.io/txns/Eh7pwFaPcnzXY2n6kfSxaEFYvRu5kufPW4uc7WjDoza5) |
+| **Withdrawal** (14 Nov), shop `0xeraya.near` | **The shop cashes out:** Eraya withdrew its 2.60 USDC (orders #2, #4, #6 and #7) from NEAR Intents at near.com; 2.595836 USDC landed in its own NEAR wallet | [1Click explorer](https://explorer.near-intents.org/transactions/742a34d932c82c0966b20c9c026362e0398853ec858c8afc90e675e0c60b6225) · [account](https://nearblocks.io/address/0xeraya.near) |
+| **#9** (hosted live app, 15 Nov), 0.20 USDC, shop `0xeraya.near` | The **hosted deployment** end to end, and the **first payment in another token and chain**: paid in **ETH on Ethereum**, converted by 1Click into exactly 0.20 USDC → Funded → handed over → 6-digit code → released automatically after the window | [create](https://nearblocks.io/txns/3Fb82jfVLq2gotyvimA1dD8gMD9PpR8Zwa5TYEiSdvGQ) · [Ethereum payment](https://etherscan.io/tx/0x74fd626543003cf2332840960a38467078fb3b26e650145e0d5f7ba28e00bd5d) · [funded](https://nearblocks.io/txns/A6F5CoUT52VWYatfonWGX7AysaySfrTgU4Vgz3yMJc43) · [shipped](https://nearblocks.io/txns/5iHWZaskMrJ8sbFCBc25ukyjX977HdRiaHMDhLSaN7MQ) · [delivered](https://nearblocks.io/txns/6wC5ojJB6gSNsXhawmqpJgkSuRADp4r1QgQpdstMnoZS) · [released](https://nearblocks.io/txns/AzSL2KdiYQ3KRptxjPeXb4azFMuvPWFYL1ufxMEXsADX) |
 
 Each release and refund transaction shows the same log sequence: the escrow
 emits `order_released` or `order_refunded`, the USDC contract transfers to
@@ -117,7 +124,7 @@ Browser-only version, with no backend at all: `npm run dev:mock`.
 ### Tests
 
 ```bash
-npm test                 # shared 5, API 80, web 108 tests (no network)
+npm test                 # shared 5, API 93, web 119 tests (no network)
 npm run test:contract    # 49 contract unit tests (needs Rust)
 ```
 
@@ -148,6 +155,19 @@ to `data/merchant-tokens/<id>.txt` without printing it. Then set
 `MERCHANTS_FILE=data/merchants.json` and restart the API. A payout account can
 be a NEAR account or a plain `0x…` wallet address: NEAR Intents credits both
 (order #3's refund went to a `0x…` account).
+
+### Shops
+
+On the live app, a shop signs up at `/seller/signup` with NEAR Mobile, Meteor,
+HOT or MetaMask. The wallet signs a one-time message (NEP-413, or
+`personal_sign` for MetaMask): no password and no token to copy. Payouts go to
+the wallet that signed up. Shops that join this way have beta limits: 25 USDC
+per order and 10 open orders, plus a cap of 30 new on-chain orders an hour
+across all shops.
+
+The live app runs on Render with a disk for its database (`render.yaml`; steps
+in [`DEPLOY.md`](DEPLOY.md)). The relayer and checker keys live on that disk,
+never in the repo.
 
 ## How NEAR is used
 
@@ -195,8 +215,9 @@ These paths are covered by unit tests but have not run with real money yet:
 - the automatic refund after the deadline, run by the scheduler (the complaint
   and refund path above did run);
 - a Borzo courier webhook (only Borzo's test environment so far);
-- a shop withdrawing from NEAR Intents to another chain;
-- payments in anything other than USDC on Base;
+- a shop withdrawing from NEAR Intents to a different chain (Eraya's withdrawal
+  to its own NEAR account did run, above);
+- payments in tokens other than USDC on Base and ETH on Ethereum (order #9);
 - the **Pay with wallet** button (tested against a fake wallet; it sends the
   same plain transfer as the exchange withdrawals above);
 - Ship24 tracking webhooks, parked (unmatched) payments with

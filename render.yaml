@@ -42,8 +42,8 @@ services:
   # Paid plan because it needs a disk for the database and must never sleep (the scheduler
   # releases payouts and refunds on time). See "Live app" in DEPLOY.md.
   # - Values with `sync: false` are typed in the Render dashboard, never committed.
-  # - The relayer and checker keys are Render Secret Files (Environment > Secret Files),
-  #   named relayer.json and checker.json; Render puts them in /etc/secrets/.
+  # - The relayer and checker keys live on the disk in /var/data/keys (copied over with
+  #   `scp -s`, folder mode 700, files mode 600), never in the repo. See DEPLOY.md.
   # - Only one backend may use the relayer key at a time: stop any local live API first.
   - type: web
     name: doorstep-near-live-api
@@ -67,9 +67,9 @@ services:
       - key: DB_PATH
         value: /var/data/doorstep.sqlite
       - key: RELAYER_KEY_FILE
-        value: /etc/secrets/relayer.json
+        value: /var/data/keys/relayer.json
       - key: CHECKER_KEY_FILE
-        value: /etc/secrets/checker.json
+        value: /var/data/keys/checker.json
       # 10 minutes while we test in public; 86400000 (24 h) for real use.
       - key: COMPLAINT_WINDOW_MS
         value: "600000"

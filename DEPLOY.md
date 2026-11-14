@@ -66,8 +66,15 @@ It costs about $7.25 a month: the Starter instance plus a 1 GB disk. The static 
 2. Push `render.yaml`. With Blueprint auto-sync on, Render creates both services. Otherwise open the Blueprint and click **Manual Sync**.
 3. Open `doorstep-near-live-api` > **Environment**:
    - **Environment Variables > Add from .env:** paste these lines from your local `.env`: `ESCROW`, `RELAYER_ACCOUNT`, `SHOP_ACCOUNT`, `SHOP_NAME`, `SHOP_ADDRESS`, `SHOP_PHONE` and `SELLER_TOKEN`. Add `ONECLICK_JWT` or `ONECLICK_API_KEY` if you have one. Don't paste `API_PORT`, `WEB_URL`, `DB_PATH` or the key file paths: `render.yaml` sets those for Render.
-   - **Secret Files:** add `relayer.json` and `checker.json`. Paste the contents of `.keys/relayer.json` and `.keys/checker.json`. Render puts them in `/etc/secrets/`.
    - Click **Save, rebuild, and deploy**.
+   - **Copy the two key files onto the disk.** Add your SSH key in Render (**Account Settings > SSH Public Keys**), then run:
+     ```sh
+     H=<service-id>@ssh.singapore.render.com   # the service's SSH address (its Connect > SSH tab)
+     echo "mkdir -p /var/data/keys && chmod 700 /var/data/keys; exit" | ssh -tt $H
+     scp -s .keys/relayer.json .keys/checker.json $H:/var/data/keys/
+     echo "chmod 600 /var/data/keys/*.json; exit" | ssh -tt $H
+     ```
+     Then redeploy. We don't use Render's Secret Files: for us they arrived split into one file per JSON field.
 4. **Stop any live API on your own machine first.** Two backends that send with the same relayer key collide on transaction nonces.
 5. Check that it worked:
    - https://doorstep-near-live-api.onrender.com/health returns `{"ok":true}`.
@@ -80,5 +87,5 @@ It costs about $7.25 a month: the Starter instance plus a 1 GB disk. The static 
 
 - **The database is on the disk,** at `/var/data/doorstep.sqlite`. It survives deploys and restarts.
 - **Deploys take the API down for about a minute.** A service with a disk can't run two copies at once.
-- **Secrets never go in the repo.** They live in the Render dashboard, as environment variables and Secret Files.
+- **Secrets never go in the repo.** Settings live in the Render dashboard. The two keys live on the disk in `/var/data/keys`, so they also survive deploys.
 - **Shops that sign up with a wallet have beta limits:** 25 USDC per order and 10 open orders. On top of that, there's a cap of 30 new on-chain orders an hour across all shops (`render.yaml`).

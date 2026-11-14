@@ -2,7 +2,7 @@
 
 ## 13–14 Nov: orders through the app
 
-Both orders were placed through the web app and the backend in live mode, on the
+These orders were placed through the web app and the backend in live mode, on the
 same escrow. The shop account is `0xeraya.near` (Eraya Foods, with their
 permission). The buyer paid with USDC on Base, withdrawn straight from an
 exchange to the 1Click deposit address. All times are IST.
@@ -49,6 +49,46 @@ holds 1000000 USDC units after the refund. So `intents.near` accepts lowercase
 Check: `intents.near` `mt_balance_of("0xeraya.near", USDC)` = 2600000 after the
 release (orders 2, 4, 6 and 7). Orders 4 and 6 were 0.20 USDC repeats of the
 order 2 path; order 5 was created on chain but never paid.
+
+### Order 8: a second shop that signed up with its wallet (0.20 USDC)
+
+ANKUSH EXPORTS is a test shop the team created on the sign-up page with a Meteor
+wallet (NEP-413 signature). The buyer paid 0.202064 USDC on Base.
+
+| Step | Time | Transaction | Result |
+| --- | --- | --- | --- |
+| `create_order` (relayer) | 17:47 | [3KzoJDLV…mBnG](https://nearblocks.io/txns/3KzoJDLV6snCmzw2cvWhuBVi48jpzKuox8BffPo3mBnG) | Created, seller = the wallet that signed up |
+| Buyer pays 0.202064 USDC on Base | 17:48 | [0x8a71ada7…f683](https://basescan.org/tx/0x8a71ada7b580d0252c9540bd60ec36c4ad69e548b782500c5be5f6b9d3b3f683) | 1Click `SUCCESS` |
+| 1Click delivery to the escrow | 17:48 | [3uLmomuU…RNkD](https://nearblocks.io/txns/3uLmomuULRrR5dnoqJ5zLLnutRQs3CxHkLLAztZmRNkD) | **Funded** |
+| `mark_shipped` | 17:49 | [BGt4M6vL…ak8z](https://nearblocks.io/txns/BGt4M6vLEyF16Hr5yQYn5TyMa62nRLHbWTKGvBJMak8z) | Shipped |
+| `confirm_by_checker` (6-digit code) | 17:49 | [2dNgakqP…eThq](https://nearblocks.io/txns/2dNgakqPgfjhLAX7aiqd4gsbJUzmQDCWpsBJMYQ4eThq) | **Delivered** |
+| `release` (scheduler) | 18:00 | [Eh7pwFaP…oza5](https://nearblocks.io/txns/Eh7pwFaPcnzXY2n6kfSxaEFYvRu5kufPW4uc7WjDoza5) | `order_released` to the shop's wallet |
+
+### Order 9: the hosted live app, paid in ETH on Ethereum (0.20 USDC)
+
+The first order on the hosted app (https://doorstep-near-live.onrender.com, Render),
+and the first payment that was not USDC: the buyer paid 0.000116354 ETH on
+Ethereum, and 1Click converted it into exactly 0.20 USDC for the escrow.
+
+| Step | Time | Transaction | Result |
+| --- | --- | --- | --- |
+| `create_order` (relayer) | 04:32 | [3Fb82jfV…dGQ](https://nearblocks.io/txns/3Fb82jfVLq2gotyvimA1dD8gMD9PpR8Zwa5TYEiSdvGQ) | Created, seller `0xeraya.near` |
+| Buyer pays 0.000116354 ETH on Ethereum | 04:46 | [0x74fd6265…bd5d](https://etherscan.io/tx/0x74fd626543003cf2332840960a38467078fb3b26e650145e0d5f7ba28e00bd5d) | Success (block 26416452); 1Click `SUCCESS` |
+| 1Click delivery to the escrow | 04:48 | [A6F5CoUT…Jc43](https://nearblocks.io/txns/A6F5CoUT52VWYatfonWGX7AysaySfrTgU4Vgz3yMJc43) | **Funded**, paid 200000 |
+| `mark_shipped("hand")` | 04:48 | [5iHWZask…MN7MQ](https://nearblocks.io/txns/5iHWZaskMrJ8sbFCBc25ukyjX977HdRiaHMDhLSaN7MQ) | Shipped |
+| `confirm_by_checker` (6-digit code) | 04:48 | [6wC5ojJB…noZS](https://nearblocks.io/txns/6wC5ojJB6gSNsXhawmqpJgkSuRADp4r1QgQpdstMnoZS) | **Delivered** |
+| `release` (scheduler on Render) | 04:59 | [AzSL2Kdi…sADX](https://nearblocks.io/txns/AzSL2KdiYQ3KRptxjPeXb4azFMuvPWFYL1ufxMEXsADX) | `order_released` to `0xeraya.near` |
+
+### Withdrawal: Eraya cashes out (2.60 USDC)
+
+Eraya signed in at near.com (the NEAR Intents app) with the same wallet and
+withdrew the 2.60 USDC from orders 2, 4, 6 and 7 to its own NEAR account.
+
+- [1Click explorer](https://explorer.near-intents.org/transactions/742a34d932c82c0966b20c9c026362e0398853ec858c8afc90e675e0c60b6225): status `SUCCESS`.
+- On NearBlocks: the burn inside `intents.near`, then `ft_transfer` from
+  `intents.near` to `0xeraya.near`. After it, `ft_balance_of("0xeraya.near")`
+  on the USDC contract = 2595836 (2.595836 USDC; the rest was the withdrawal
+  fee) and the NEAR Intents balance = 0.
 
 ---
 
@@ -152,16 +192,17 @@ Logs from the `release` transaction, in order:
 
 ## Not tested yet
 
-As of 14 Nov: `confirm_by_checker`, `raise_complaint` and `resolve` have now run
-on mainnet (orders 2 and 3 above). Still open:
+As of 15 Nov: `confirm_by_checker`, `raise_complaint` and `resolve` have run on
+mainnet (orders 2 and 3 above), a second shop was paid (order 8), and the shop
+withdrew from NEAR Intents to its own NEAR account. Still open:
 
-- Seller withdrawal from NEAR Intents to another chain: the last step of the demo.
+- A withdrawal from NEAR Intents to a different chain.
 - `refund` after the deadline, parked payments and `refund_unmatched`, and the `Direct` payout mode.
-- Paying from Arbitrum or any non-USDC token.
+- Paying from Arbitrum, Solana or Bitcoin (ETH on Ethereum ran in order 9).
 - Refunds to a buyer with no NEAR account: answered in practice by order 3, where the refund went to an EVM-style `0x…` account inside NEAR Intents.
 
 ## Next
 
 1. Get a 1Click JWT before real orders, to remove the 0.1% fee.
-2. Test the seller withdrawal out of NEAR Intents with these 2 USDC.
+2. ~~Test the seller withdrawal out of NEAR Intents.~~ Done 14 Nov (above).
 3. Build the backend on this exact request shape (`scripts/oneclick-test.mjs`).
