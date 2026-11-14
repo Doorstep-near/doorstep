@@ -1,9 +1,61 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { API_PORT, EXPLORER_TX_URL } from "@doorstep/shared";
+import { API_PORT, EXPLORER_TX_URL, NearAccountId } from "@doorstep/shared";
+import { z } from "zod";
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+/** A shop that sells through Doorstep. Each has its own seller token and payout account. */
+export interface Merchant {
+  /** Short id, e.g. "eraya". The shop from SHOP_* settings is "main". */
+  id: string;
+  name: string;
+  /** NEAR account (or lowercase 0x… account in NEAR Intents) that receives payouts. */
+  account: string;
+  token: string;
+  /** Pickup address and phone, needed only for Borzo bookings. */
+  address: string;
+  phone: string;
+}
+
+const MerchantEntry = z.object({
+  id: z.string().regex(/^[a-z0-9-]{2,32}$/, "id: 2-32 lowercase letters, digits or -"),
+  name: z.string().trim().min(1).max(80),
+  account: NearAccountId,
+  token: z.string().min(16, "token: at least 16 characters"),
+  address: z.string().default(""),
+  phone: z.string().default(""),
+});
+
+/** Reads extra shops from MERCHANTS_FILE (a JSON array). Throws with a clear message if the file is wrong. */
+export function loadMerchants(path: string): Merchant[] {
+  if (!path) return [];
+  if (!existsSync(path)) throw new Error(`MERCHANTS_FILE not found: ${path}`);
+  const parsed = z.array(MerchantEntry).safeParse(JSON.parse(readFileSync(path, "utf8")));
+  if (!parsed.success) throw new Error(`MERCHANTS_FILE is invalid: ${parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
+  return parsed.data;
+}
+
+/** Every shop: the one from SHOP_* settings ("main") first, then MERCHANTS_FILE. */
+export function allMerchants(c: Config): Merchant[] {
+  const main: Merchant[] =
+    c.sellerToken && c.shopAccount ? [{ id: "main", name: c.shopName, account: c.shopAccount, token: c.sellerToken, address: c.shopAddress, phone: c.shopPhone }] : [];
+  return [...main, ...c.merchants];
+}
+
+/** Problems that make the shop list unsafe (duplicate ids, tokens or payout accounts). */
+export function merchantProblems(list: Merchant[]): string[] {
+  const out: string[] = [];
+  for (const key of ["id", "token", "account"] as const) {
+    const seen = new Set<string>();
+    for (const m of list) {
+      if (seen.has(m[key])) out.push(key === "token" ? `two shops share a seller token (${m.id})` : `duplicate ${key}: ${m[key]}`);
+      seen.add(m[key]);
+    }
+  }
+  return out;
+}
 
 export interface Config {
   demoMode: boolean;
@@ -17,6 +69,10 @@ export interface Config {
   shopAccount: string;
   shopAddress: string;
   shopPhone: string;
+  /** Path of the JSON file with extra shops (MERCHANTS_FILE), or "". */
+  merchantsFile: string;
+  /** Extra shops from MERCHANTS_FILE. Use allMerchants() for the full list. */
+  merchants: Merchant[];
   inrPerUsd: number;
   dbPath: string;
   network: "mainnet" | "testnet";
@@ -75,6 +131,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     shopAccount: demoMode ? "eraya-foods.doorstep-demo.near" : str(env, "SHOP_ACCOUNT", str(env, "SELLER")),
     shopAddress: str(env, "SHOP_ADDRESS", demoMode ? "Shop 4, Sector 18 Market, Noida, Uttar Pradesh" : ""),
     shopPhone: str(env, "SHOP_PHONE", demoMode ? "+91 98100 00000" : ""),
+    // Extra shops also work in demo mode (payouts there are fake), e.g. to show two shops side by side.
+    merchantsFile: str(env, "MERCHANTS_FILE") ? fromRoot(str(env, "MERCHANTS_FILE")) : "",
+    merchants: str(env, "MERCHANTS_FILE") ? loadMerchants(fromRoot(str(env, "MERCHANTS_FILE"))) : [],
     inrPerUsd: num(env, "INR_PER_USD", 84.2),
     dbPath: demoMode ? ":memory:" : fromRoot(str(env, "DB_PATH", "data/doorstep.sqlite")),
     network,

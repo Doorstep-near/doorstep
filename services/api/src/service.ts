@@ -27,7 +27,7 @@ import {
 } from "@doorstep/shared";
 import { borzoStage, deliveryStatus, dropPoint, type Borzo, type BorzoOrder, type BorzoOrderRequest } from "./borzo/client";
 import { CHECKER_REF_RE, type Checker } from "./checker";
-import type { Config } from "./config";
+import { allMerchants, type Config, type Merchant } from "./config";
 import type { Db, OrderRow, PaymentRow } from "./db";
 import { verifyEd25519 } from "./ed25519";
 import { ChainError, fail } from "./errors";
@@ -193,6 +193,23 @@ export class OrderService {
     return this.d.db.getOrder(id) ?? fail("not_found", "No such order");
   }
 
+  /** The shop from the SHOP_* settings: the default for internal callers such as demo seeding. */
+  get mainMerchant(): Merchant {
+    const c = this.d.config;
+    return allMerchants(c)[0] ?? { id: "main", name: c.shopName, account: c.shopAccount, token: "", address: c.shopAddress, phone: c.shopPhone };
+  }
+
+  merchantByAccount(account: string): Merchant | undefined {
+    return allMerchants(this.d.config).find((m) => m.account === account);
+  }
+
+  /** Like must(), but another shop's order looks exactly like a missing one. */
+  mustOwn(id: string, m: Merchant): OrderRow {
+    const row = this.must(id);
+    if (row.shopAccount !== m.account) fail("not_found", "No such order");
+    return row;
+  }
+
   private reload(id: string): OrderRow {
     return this.must(id);
   }
@@ -272,7 +289,7 @@ export class OrderService {
 
   // ================================================================= seller
 
-  createOrder(req: CreateOrderRequest): SellerOrder {
+  createOrder(req: CreateOrderRequest, m: Merchant = this.mainMerchant): SellerOrder {
     const deliverBy = Date.parse(req.deliverBy);
     const now = this.now;
     if (deliverBy < now + 2 * 60 * MIN - MIN) fail("invalid_input", "deliverBy must be at least 2 hours from now");
@@ -285,8 +302,8 @@ export class OrderService {
       note: req.note || null,
       priceUnits: BigInt(req.priceUnits).toString(),
       paidUnits: "0",
-      shopName: this.d.config.shopName,
-      shopAccount: this.d.config.shopAccount,
+      shopName: m.name,
+      shopAccount: m.account,
       escrow: this.escrow.account,
       deliveryMethod: req.deliveryMethod,
       deliveryArea: req.deliveryArea || null,
@@ -319,26 +336,31 @@ export class OrderService {
     return this.sellerView(row);
   }
 
-  async getForSeller(id: string): Promise<SellerOrder> {
-    return this.sellerView(await this.refresh(this.must(id)));
+  async getForSeller(id: string, m?: Merchant): Promise<SellerOrder> {
+    return this.sellerView(await this.refresh(m ? this.mustOwn(id, m) : this.must(id)));
   }
 
-  async list(statuses?: OrderStatus[]): Promise<SellerOrder[]> {
+  async list(statuses?: OrderStatus[], m?: Merchant): Promise<SellerOrder[]> {
+    const mine = (r: OrderRow) => !m || r.shopAccount === m.account;
     // Refresh a bounded number of stale active orders, so the dashboard doesn't wait for the scheduler.
     const stale = this.activeOnChain()
+      .filter(mine)
       .filter((r) => r.chainSyncedAt == null || this.now - r.chainSyncedAt > 15_000)
       .slice(0, 20);
     await Promise.all(stale.map((r) => this.syncChain(r, true).catch(() => r)));
-    return this.d.db.listOrders(statuses).map((r) => this.sellerView(r));
+    return this.d.db
+      .listOrders(statuses)
+      .filter(mine)
+      .map((r) => this.sellerView(r));
   }
 
-  async summary(): Promise<SellerSummary> {
-    const rows = this.d.db.listOrders();
+  async summary(m: Merchant = this.mainMerchant): Promise<SellerSummary> {
+    const rows = this.d.db.listOrders().filter((r) => r.shopAccount === m.account);
     const sum = (ss: OrderStatus[]) => rows.filter((r) => ss.includes(r.status)).reduce((a, r) => a + BigInt(r.paidUnits), 0n).toString();
     const count = (ss: OrderStatus[]) => rows.filter((r) => ss.includes(r.status)).length;
     let intentsBalanceUnits = "0";
     try {
-      intentsBalanceUnits = await this.escrow.intentsBalance(this.d.config.shopAccount);
+      intentsBalanceUnits = await this.escrow.intentsBalance(m.account);
     } catch (e) {
       this.d.log.warn({ err: (e as Error).message }, "intents balance read failed");
     }
@@ -370,8 +392,9 @@ export class OrderService {
   // ------------------------------------------------------------- shipping
 
   private borzoRequest(row: OrderRow): BorzoOrderRequest {
-    const { shopAddress, shopPhone, shopName } = this.d.config;
-    if (!shopAddress || !shopPhone) fail("courier_error", "Set SHOP_ADDRESS and SHOP_PHONE to book Borzo");
+    const shop = this.merchantByAccount(row.shopAccount) ?? this.mainMerchant;
+    const { address: shopAddress, phone: shopPhone, name: shopName } = shop;
+    if (!shopAddress || !shopPhone) fail("courier_error", "Set this shop's pickup address and phone to book Borzo");
     if (!row.deliveryAddress || !row.buyerPhone) fail("invalid_input", "Borzo delivery needs the buyer's address and phone");
     return {
       matter: row.item.slice(0, 5000),

@@ -8,13 +8,13 @@ import { useDocumentTitle } from "../../components/layout/Layout";
 import { Amount, Button, ButtonAnchor, ButtonLink, Card, EmptyState, ErrorState, Skeleton, StatusChip } from "../../components/ui";
 import { api } from "../../lib/api";
 import { relativeTime, usdc } from "../../lib/format";
-import { qk, useAppSettings } from "../../lib/query";
+import { qk, useAppSettings, useSellerMe } from "../../lib/query";
 import { lastActivity } from "../../lib/status";
 import { FILTERS, matchesFilter, matchesSearch, type OrderFilter } from "./sellerUtils";
 
 export default function SellerDashboard() {
   useDocumentTitle("Dashboard");
-  const { config } = useAppSettings();
+  const me = useSellerMe();
   const summary = useQuery({ queryKey: qk.sellerSummary, queryFn: api.seller.summary, refetchInterval: 15_000 });
   const orders = useQuery({ queryKey: qk.sellerOrders, queryFn: api.seller.listOrders, refetchInterval: 10_000 });
 
@@ -22,7 +22,7 @@ export default function SellerDashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-text-3">{config?.shopName ?? " "}</p>
+          <p className="text-sm font-medium text-text-3">{me.data?.name ?? " "}</p>
           <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-text sm:text-3xl">Dashboard</h1>
         </div>
         <div className="hidden lg:block">

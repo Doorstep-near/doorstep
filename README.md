@@ -117,7 +117,7 @@ Browser-only version, with no backend at all: `npm run dev:mock`.
 ### Tests
 
 ```bash
-npm test                 # shared 5, API 72, web 107 tests (no network)
+npm test                 # shared 5, API 80, web 108 tests (no network)
 npm run test:contract    # 49 contract unit tests (needs Rust)
 ```
 
@@ -134,6 +134,20 @@ and [`scripts/README.md`](scripts/README.md). In short:
    and the relayer's limited key (`bash scripts/add-relayer-key.sh`).
 4. Run `npm run dev:api` and `npm run dev:web`. The API checks the contract at
    startup and prints a warning for anything missing.
+
+**More than one shop.** One Doorstep serves many shops on the same escrow.
+Each shop has its own seller token and payout account, and sees only its own
+orders. The shop from `SHOP_*` in `.env` is the first one. Add others with:
+
+```bash
+npm run merchant:add -- --id spice --name "Spice Route" --account 0xabc...
+```
+
+This writes `data/merchants.json` (git-ignored) and saves the new shop's token
+to `data/merchant-tokens/<id>.txt` without printing it. Then set
+`MERCHANTS_FILE=data/merchants.json` and restart the API. A payout account can
+be a NEAR account or a plain `0x…` wallet address: NEAR Intents credits both
+(order #3's refund went to a `0x…` account).
 
 ## How NEAR is used
 

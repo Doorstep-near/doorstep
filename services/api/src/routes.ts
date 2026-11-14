@@ -14,8 +14,10 @@ import {
   ShipRequest,
   SignatureRequest,
   type AppConfig,
+  type SellerMe,
 } from "@doorstep/shared";
 import { verifyBorzoSignature } from "./borzo/client";
+import { allMerchants, type Merchant } from "./config";
 import type { Demo } from "./demo";
 import { AppError, errorBody, fail, parseBody } from "./errors";
 import type { Deps, OrderService } from "./service";
@@ -55,14 +57,22 @@ export function registerRoutes(app: FastifyInstance, svc: OrderService, d: Deps,
   // ---------------------------------------------------------------- seller
 
   app.register(async (seller) => {
+    // Each shop has its own seller token; it only ever sees and changes its own orders.
     seller.addHook("onRequest", async (req) => {
       const h = req.headers.authorization ?? "";
       const token = h.startsWith("Bearer ") ? h.slice(7).trim() : "";
-      if (!config.sellerToken || !token || !safeEqual(token, config.sellerToken)) throw new AppError("unauthorized", "Seller token missing or wrong");
+      let found: Merchant | undefined;
+      // Compare against every shop (no early exit), so timing doesn't reveal which tokens exist.
+      for (const m of allMerchants(config)) if (token && safeEqual(token, m.token) && !found) found = m;
+      if (!found) throw new AppError("unauthorized", "Seller token missing or wrong");
+      req.merchant = found;
     });
+    const me = (req: FastifyRequest): Merchant => req.merchant!;
+
+    seller.get("/seller/me", async (req): Promise<SellerMe> => ({ id: me(req).id, name: me(req).name, account: me(req).account }));
 
     seller.post("/seller/orders", async (req, reply) => {
-      const order = svc.createOrder(parseBody(CreateOrderRequest, req.body));
+      const order = svc.createOrder(parseBody(CreateOrderRequest, req.body), me(req));
       return reply.status(201).send(order);
     });
 
@@ -74,20 +84,27 @@ export function registerRoutes(app: FastifyInstance, svc: OrderService, d: Deps,
             return r.success ? r.data : fail("invalid_input", `Unknown status "${s}"`);
           })
         : undefined;
-      return { orders: await svc.list(statuses) };
+      return { orders: await svc.list(statuses, me(req)) };
     });
 
-    seller.get("/seller/summary", async () => svc.summary());
-    seller.get("/seller/orders/:id", async (req) => svc.getForSeller(orderId(req)));
+    seller.get("/seller/summary", async (req) => svc.summary(me(req)));
+    seller.get("/seller/orders/:id", async (req) => svc.getForSeller(orderId(req), me(req)));
 
     seller.post("/seller/orders/:id/ship/quote", async (req) => {
+      svc.mustOwn(orderId(req), me(req));
       parseBody(ShipQuoteRequest, req.body);
       return svc.shipQuote(orderId(req));
     });
 
-    seller.post("/seller/orders/:id/ship", async (req) => svc.ship(orderId(req), parseBody(ShipRequest, req.body)));
+    seller.post("/seller/orders/:id/ship", async (req) => {
+      svc.mustOwn(orderId(req), me(req));
+      return svc.ship(orderId(req), parseBody(ShipRequest, req.body));
+    });
 
-    seller.post("/seller/orders/:id/otp/verify", async (req) => svc.verifyOtp(orderId(req), parseBody(OtpVerifyRequest, req.body).code));
+    seller.post("/seller/orders/:id/otp/verify", async (req) => {
+      svc.mustOwn(orderId(req), me(req));
+      return svc.verifyOtp(orderId(req), parseBody(OtpVerifyRequest, req.body).code);
+    });
   });
 
   // ----------------------------------------------------------------- buyer

@@ -27,7 +27,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "deploy": "bash scripts/deploy.sh",
     "order": "bash scripts/order.sh",
-    "oneclick": "node scripts/oneclick-test.mjs"
+    "oneclick": "node scripts/oneclick-test.mjs",
+    "merchant:add": "node scripts/add-merchant.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",

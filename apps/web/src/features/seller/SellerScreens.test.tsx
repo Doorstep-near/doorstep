@@ -87,6 +87,19 @@ describe("SellerDashboard", () => {
   });
 });
 
+describe("shop identity", () => {
+  it("names the signed-in shop (from its seller token) on the dashboard and in the buyer preview", async () => {
+    const { api } = await import("../../lib/api");
+    const me = vi.spyOn(api.seller, "me").mockResolvedValue({ id: "spice", name: "Spice Route", account: "spice.near" });
+    const { unmount } = renderRoute(<SellerDashboard />, { path: "/seller", url: "/seller" });
+    expect(await screen.findByText("Spice Route")).toBeInTheDocument();
+    unmount();
+    renderRoute(<NewOrderPage />, { path: "/seller/new", url: "/seller/new" });
+    expect(await within(screen.getByRole("complementary", { name: "Buyer preview" })).findByText("Spice Route")).toBeInTheDocument();
+    expect(me).toHaveBeenCalled();
+  });
+});
+
 describe("SellerOrderPage", () => {
   it("ships a Funded order by hand and then confirms delivery with the buyer's code", async () => {
     const user = userEvent.setup();

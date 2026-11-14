@@ -15,7 +15,7 @@ export default function SellerLogin() {
   const next = safeNext(params.get("next"));
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { demoMode, config } = useAppSettings();
+  const { demoMode } = useAppSettings();
 
   const existing = sellerToken.get();
   const [token, setToken] = useState(isMock ? "demo" : "");
@@ -44,7 +44,7 @@ export default function SellerLogin() {
     setOffline(false);
     sellerToken.set(value);
     try {
-      await api.seller.summary();
+      await api.seller.me();
       qc.removeQueries({ queryKey: ["seller"] });
       navigate(next, { replace: true });
     } catch (err) {
@@ -73,13 +73,7 @@ export default function SellerLogin() {
             </div>
             <h1 className="mt-4 text-2xl font-semibold tracking-tight text-text">Seller sign-in</h1>
             <p className="mt-1 text-sm text-text-2">
-              {config?.shopName ? (
-                <>
-                  Manage orders for <span className="font-medium text-text">{config.shopName}</span>.
-                </>
-              ) : (
-                "Create pay links, ship orders and get paid on delivery."
-              )}
+              Sign in with your shop's seller token. Each shop sees only its own orders.
             </p>
 
             {demoMode && (

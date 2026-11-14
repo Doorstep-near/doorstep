@@ -306,7 +306,7 @@ function NextAction({ order }: { order: SellerOrder }) {
 }
 
 function ShareLink({ order }: { order: SellerOrder }) {
-  const { config, inrPerUsd } = useAppSettings();
+  const { inrPerUsd } = useAppSettings();
   const [qrOpen, setQrOpen] = useState(false);
   const p = order.payment;
   return (
@@ -325,7 +325,7 @@ function ShareLink({ order }: { order: SellerOrder }) {
       {order.status === "Created" && !p && <p className="text-sm text-text-2">The buyer has registered a refund address and is choosing how to pay.</p>}
       <CopyField label="Pay link" value={order.payLink} />
       <div className="flex flex-col gap-2 sm:flex-row">
-        <ButtonAnchor href={whatsappShareUrl(order, config?.shopName ?? "our shop", inrPerUsd)} target="_blank" icon={<MessageCircle aria-hidden className="size-4" />} className="sm:flex-1">
+        <ButtonAnchor href={whatsappShareUrl(order, order.shop.name, inrPerUsd)} target="_blank" icon={<MessageCircle aria-hidden className="size-4" />} className="sm:flex-1">
           Share on WhatsApp
         </ButtonAnchor>
         <Button variant="secondary" icon={<QrIcon aria-hidden className="size-4" />} onClick={() => setQrOpen(true)}>

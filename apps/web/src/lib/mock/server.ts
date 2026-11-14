@@ -723,6 +723,7 @@ route("GET", "/seller/orders", (c) => {
 });
 route("GET", "/seller/orders/:id", (c) => entry(c).order);
 route("GET", "/seller/summary", (c) => summary(c.store));
+route("GET", "/seller/me", () => ({ id: "main", name: SHOP.name, account: SHOP.account }));
 route(
   "POST",
   "/seller/orders/:id/ship/quote",

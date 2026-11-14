@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { IconButton, Logo, Sheet, ThemeToggle, buttonClass } from "../../components/ui";
 import { sellerToken } from "../../lib/api";
-import { useAppSettings } from "../../lib/query";
+import { useAppSettings, useSellerMe } from "../../lib/query";
 import { useUnauthorizedRedirect } from "./sellerUtils";
 
 export default function SellerLayout() {
@@ -102,8 +102,8 @@ function SecondaryLinks({ intentsAppUrl, onSignOut }: { intentsAppUrl: string; o
 
 function SellerShell() {
   useUnauthorizedRedirect();
-  const { config, intentsAppUrl } = useAppSettings();
-  const shopName = config?.shopName ?? "Your shop";
+  const { intentsAppUrl } = useAppSettings();
+  const shopName = useSellerMe().data?.name ?? "Your shop";
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);

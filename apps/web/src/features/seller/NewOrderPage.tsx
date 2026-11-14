@@ -22,7 +22,7 @@ import {
 } from "../../components/ui";
 import { api, errorMessage, isApiError } from "../../lib/api";
 import { formatDate, formatDateTime, toLocalInput } from "../../lib/format";
-import { qk, useAppSettings } from "../../lib/query";
+import { qk, useAppSettings, useSellerMe } from "../../lib/query";
 import { METHOD_LABEL, whatsappShareUrl } from "./sellerUtils";
 
 type FieldKey = "item" | "note" | "price" | "phone" | "method" | "address" | "area" | "deliverBy";
@@ -114,8 +114,8 @@ const FIELD_ORDER: FieldKey[] = ["item", "note", "price", "phone", "method", "ad
 
 export default function NewOrderPage() {
   useDocumentTitle("New order");
-  const { config, inrPerUsd } = useAppSettings();
-  const shopName = config?.shopName ?? "Your shop";
+  const { inrPerUsd } = useAppSettings();
+  const shopName = useSellerMe().data?.name ?? "Your shop";
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(initialForm);

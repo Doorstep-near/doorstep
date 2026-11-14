@@ -29,7 +29,13 @@ export const qk = {
   sellerOrders: ["seller", "orders"] as const,
   sellerOrder: (id: string) => ["seller", "order", id] as const,
   sellerSummary: ["seller", "summary"] as const,
+  sellerMe: ["seller", "me"] as const,
 };
+
+/** The shop the current seller token belongs to (each shop has its own token). */
+export function useSellerMe() {
+  return useQuery({ queryKey: qk.sellerMe, queryFn: api.seller.me, staleTime: Infinity });
+}
 
 export function useConfigQuery() {
   return useQuery({ queryKey: qk.config, queryFn: api.config, staleTime: Infinity });

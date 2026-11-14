@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
+import type { Merchant } from "./config";
 import type { Demo } from "./demo";
 import { AppError, installErrorHandler } from "./errors";
 import { registerRoutes } from "./routes";
@@ -9,6 +10,8 @@ declare module "fastify" {
   interface FastifyRequest {
     /** Exact request body text (needed to check webhook signatures). */
     rawBody?: string;
+    /** The shop a seller request is signed in as (set by the seller auth hook). */
+    merchant?: Merchant;
   }
 }
 

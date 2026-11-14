@@ -4,7 +4,7 @@ import { NearAccountId } from "@doorstep/shared";
 import { LiveBorzo } from "./borzo/client";
 import { MockBorzo } from "./borzo/mock";
 import { Checker } from "./checker";
-import type { Config } from "./config";
+import { allMerchants, merchantProblems, type Config } from "./config";
 import { Db } from "./db";
 import { Demo } from "./demo";
 import { loadSignerFile, newSigner, type Ed25519Signer } from "./ed25519";
@@ -73,6 +73,8 @@ export async function createLive(config: Config, o: LiveOverrides = {}): Promise
   for (const [name, v] of [["ESCROW", config.escrow], ["SHOP_ACCOUNT", config.shopAccount]] as const) {
     if (!NearAccountId.safeParse(v).success) throw new Error(`${name} is not a valid NEAR account id`);
   }
+  const shopProblems = merchantProblems(allMerchants(config));
+  if (shopProblems.length) throw new Error(`Shop settings: ${shopProblems.join("; ")}`);
 
   const warnings: string[] = [];
   const now = o.now ?? Date.now;

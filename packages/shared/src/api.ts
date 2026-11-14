@@ -21,6 +21,7 @@
 //   GET  /seller/orders?status=...        -> SellerOrdersResponse
 //   GET  /seller/orders/:id               -> SellerOrder
 //   GET  /seller/summary                  -> SellerSummary
+//   GET  /seller/me                       -> SellerMe (the shop this seller token belongs to)
 //   POST /seller/orders/:id/ship/quote    ShipQuoteRequest     -> ShipQuote      (Borzo price, no booking)
 //   POST /seller/orders/:id/ship          ShipRequest          -> SellerOrder    (books Borzo / records tracking / hand; calls mark_shipped)
 //   POST /seller/orders/:id/otp/verify    OtpVerifyRequest     -> SellerOrder    (checker signs + confirm_by_checker on success)
@@ -282,6 +283,10 @@ export type CreateOrderRequest = z.infer<typeof CreateOrderRequest>;
 
 export const SellerOrdersResponse = z.object({ orders: z.array(SellerOrder) });
 export type SellerOrdersResponse = z.infer<typeof SellerOrdersResponse>;
+
+/** The shop a seller token belongs to. Each shop sees only its own orders. */
+export const SellerMe = z.object({ id: z.string(), name: z.string(), account: NearAccountId });
+export type SellerMe = z.infer<typeof SellerMe>;
 
 export const SellerSummary = z.object({
   /** USDC currently held in escrow for this shop (Funded + Shipped + Delivered + Disputed). */
