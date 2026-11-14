@@ -1,11 +1,12 @@
 // Buyer-facing pieces shared by the pay page and the order page.
 import { clsx } from "clsx";
 import { links, type Order } from "@doorstep/shared";
-import { CalendarClock, KeyRound, Lock, MapPin, PackageCheck, Share2, ShieldCheck, Undo2 } from "lucide-react";
+import { CalendarClock, KeyRound, Lock, MapPin, MessageCircle, PackageCheck, Share2, ShieldCheck, Undo2, Wallet } from "lucide-react";
 import { useState } from "react";
-import { Amount, Button, Card, CopyField, Skeleton, SkeletonText } from "../../components/ui";
+import { Amount, Button, ButtonAnchor, Card, CopyField, Skeleton, SkeletonText } from "../../components/ui";
 import { seedToBase64Url, type BuyerKey } from "../../lib/buyerKey";
 import { formatDate } from "../../lib/format";
+import { isMobileBrowser, useInjectedWallet, walletAppLinks } from "../../lib/wallet";
 
 const METHOD_LABEL: Record<Order["delivery"]["method"], string> = {
   hand: "Hand delivery",
@@ -88,6 +89,16 @@ export function ProtectionExplainer({ order, className }: { order: Order; classN
   );
 }
 
+/**
+ * Opens WhatsApp on the phone with the order pass ready to send (for example to
+ * "Message yourself"). The whatsapp:// scheme goes straight to the app, so the
+ * private link never passes through a web page or our backend.
+ */
+export function whatsappPassLink(passUrl: string): string {
+  const text = `My Doorstep order pass (private). Open it at delivery to show my QR or get my 6-digit code. Don't forward it to anyone, including the shop.\n${passUrl}`;
+  return `whatsapp://send?text=${encodeURIComponent(text)}`;
+}
+
 /** "Save your order pass": the private backup link that carries the buyer key in its fragment. */
 export function OrderPassCard({ orderId, buyerKey, webUrl, emphasis = false, className }: { orderId: string; buyerKey: BuyerKey; webUrl: string; emphasis?: boolean; className?: string }) {
   const url = links.order(webUrl, orderId, seedToBase64Url(buyerKey));
@@ -108,6 +119,11 @@ export function OrderPassCard({ orderId, buyerKey, webUrl, emphasis = false, cla
         </div>
       </div>
       <CopyField className="mt-4" value={url} display={masked} copyLabel="Copy link" />
+      {isMobileBrowser() && (
+        <ButtonAnchor href={whatsappPassLink(url)} variant="secondary" size="sm" className="mt-3" icon={<MessageCircle aria-hidden className="size-4" />}>
+          Send to my WhatsApp
+        </ButtonAnchor>
+      )}
       {canShare && (
         <Button
           variant="ghost"
@@ -156,4 +172,34 @@ export function savePaySession(orderId: string, s: PaySession) {
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * On a phone with no wallet in the browser: offers to reopen the pay page inside
+ * a wallet app, where "Pay with wallet" works. Only before checkout starts,
+ * because the order pass is created in whichever browser starts paying.
+ */
+export function OpenInWalletApp({ order, practice }: { order: Order; practice: boolean }) {
+  const wallet = useInjectedWallet();
+  if (practice || wallet || order.buyer.publicKey || !isMobileBrowser()) return null;
+  return (
+    <Card>
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+          <Wallet aria-hidden className="size-[18px]" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-semibold text-text">Paying from a wallet app?</h2>
+          <p className="mt-0.5 text-sm text-text-2">Open this page in the app first, then pay with one tap. Works for USDC and ETH on Base, Arbitrum and Ethereum.</p>
+        </div>
+      </div>
+      <div className="mt-3.5 flex flex-wrap gap-2">
+        {walletAppLinks(window.location.href).map((l) => (
+          <ButtonAnchor key={l.name} href={l.href} variant="secondary" size="sm">
+            Open in {l.name}
+          </ButtonAnchor>
+        ))}
+      </div>
+    </Card>
+  );
 }

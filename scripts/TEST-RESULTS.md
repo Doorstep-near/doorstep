@@ -1,6 +1,6 @@
 # Mainnet test results
 
-## 13–14 Nov: first orders through the app
+## 13–14 Nov: orders through the app
 
 Both orders were placed through the web app and the backend in live mode, on the
 same escrow. The shop account is `0xeraya.near` (Eraya Foods, with their
@@ -34,6 +34,21 @@ Check: `intents.near` `mt_balance_of("0xeraya.near", USDC)` = 200000 after the r
 Check: the buyer's refund account (an EVM-style `0x…` account in NEAR Intents)
 holds 1000000 USDC units after the refund. So `intents.near` accepts lowercase
 `0x` account ids as recipients.
+
+### Order 7: the filmed order (2.00 USDC)
+
+| Step | Time | Transaction | Result |
+| --- | --- | --- | --- |
+| `create_order` (relayer) | 13:14 | [4UwYzv1X…HCPo](https://nearblocks.io/txns/4UwYzv1X9c4BTR3fE8kK9P8nCPLuiiqar4asdj7sHCPo) | Created, seller `0xeraya.near` |
+| Buyer pays 2.020442 USDC on Base | 13:16 | [0x943324b4…4a69](https://basescan.org/tx/0x943324b4e64af1e6af89c33d5603f7a1767c2eec64c05e4a1d8467ed54eb4a69) | 1Click `SUCCESS`, 2.0 USDC out. Deposit address checked with 1Click before paying: recipient = escrow, `customRecipientMsg` = `"7"` |
+| 1Click delivery to the escrow | 13:17 | [9mCQoenB…bA8r](https://nearblocks.io/txns/9mCQoenBZy6kDADQhvkmZ6y28ut1Hp17jEENNWHobA8r) | **Funded**, paid 2000000 |
+| `mark_shipped("hand")` | 13:17 | [GggmU25y…FeJw](https://nearblocks.io/txns/GggmU25yHAxe2A4DjF3KaYYStrPzL7XqHAb8iUY2FeJw) | Shipped |
+| `confirm_by_checker` (6-digit code) | 13:18 | [7r7YRrTA…X1eQ](https://nearblocks.io/txns/7r7YRrTAv6dkRU3g97RBNvu6Hx2qQhVVTjv181cvX1eQ) | **Delivered**, proof `Checker { courier_ref: "hand" }` |
+| `release` (scheduler) | 13:28 | [DDzh22LQ…moGHH](https://nearblocks.io/txns/DDzh22LQSB7HGebsRXYHHnuSM2qibSoauyUJH34moGHH) | `order_released`, 2000000 to `0xeraya.near` |
+
+Check: `intents.near` `mt_balance_of("0xeraya.near", USDC)` = 2600000 after the
+release (orders 2, 4, 6 and 7). Orders 4 and 6 were 0.20 USDC repeats of the
+order 2 path; order 5 was created on chain but never paid.
 
 ---
 

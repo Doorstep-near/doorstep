@@ -66,6 +66,25 @@ describe("buyer pay flow (mock API)", () => {
     await waitFor(() => expect(screen.getByText("Payment seen").closest("li")).toHaveAttribute("aria-current", "step"));
   });
 
+  it("fills the refund address from a browser wallet, and never offers wallet pay for a practice address", async () => {
+    const user = userEvent.setup();
+    const request = vi.fn(async ({ method }: { method: string }) => (method === "eth_requestAccounts" ? ["0x55F2000000000000000000000000000000000001"] : null));
+    (window as unknown as { ethereum?: unknown }).ethereum = { request };
+    try {
+      renderRoute(<PayPage />, { path: "/pay/:id", url: "/pay/demo-mom-gift" });
+      await user.click(await screen.findByRole("radio", { name: "USDC on Base" }));
+      await user.click(screen.getByRole("button", { name: "Use my wallet's address" }));
+      expect(screen.getByLabelText("Your Base address")).toHaveValue("0x55F2000000000000000000000000000000000001");
+      await user.click(screen.getByRole("button", { name: /Continue to payment/ }));
+      expect(await screen.findByText("Send exactly")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent("Practice mode");
+      expect(screen.queryByRole("button", { name: /Pay with wallet/ })).not.toBeInTheDocument();
+      expect(request.mock.calls.map((c) => c[0].method)).toEqual(["eth_requestAccounts"]);
+    } finally {
+      delete (window as unknown as { ethereum?: unknown }).ethereum;
+    }
+  });
+
   it("asks a Solana payer for a NEAR refund account too", async () => {
     const user = userEvent.setup();
     renderRoute(<PayPage />, { path: "/pay/:id", url: "/pay/demo-mom-gift" });

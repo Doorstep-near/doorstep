@@ -7,13 +7,14 @@ import { BuyerLayout, useDocumentTitle } from "../../components/layout/Layout";
 import { Amount, Banner, ButtonLink, Card, CheckAnimation, EmptyState, ErrorState, Skeleton } from "../../components/ui";
 import { api } from "../../lib/api";
 import { loadKey } from "../../lib/buyerKey";
+import { isMock } from "../../lib/env";
 import { refundPlan } from "../../lib/chains";
 import { qk, useAppSettings, useOrder } from "../../lib/query";
 import { PAYMENT_PROBLEMS } from "../../lib/status";
 import { DemoControls } from "../demo/DemoControls";
 import { CheckoutForm } from "./CheckoutForm";
 import { DepositView } from "./DepositView";
-import { loadPaySession, OrderPassCard, OrderSummaryCard, OrderSummarySkeleton, ProtectionExplainer, ShopHeader, type PaySession } from "./parts";
+import { loadPaySession, OpenInWalletApp, OrderPassCard, OrderSummaryCard, OrderSummarySkeleton, ProtectionExplainer, ShopHeader, type PaySession } from "./parts";
 
 const ACTIVE_PAYMENT = ["PENDING_DEPOSIT", "KNOWN_DEPOSIT_TX", "PROCESSING", "SUCCESS", "INCOMPLETE_DEPOSIT", "REFUNDED", "FAILED"];
 const SECURED = ["Funded", "Shipped", "Delivered", "Disputed", "Released", "Refunded"];
@@ -156,6 +157,7 @@ export default function PayPage() {
     body = (
       <div className="flex flex-col gap-4">
         <OrderSummaryCard order={order} inrPerUsd={settings.inrPerUsd} />
+        <OpenInWalletApp order={order} practice={settings.demoMode || isMock} />
         <ProtectionExplainer order={order} />
         {editing && payment?.status === "PENDING_DEPOSIT" && (
           <Banner tone="warning" title="Changing how you pay">

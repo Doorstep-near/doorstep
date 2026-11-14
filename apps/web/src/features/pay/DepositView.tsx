@@ -1,13 +1,23 @@
 import { clsx } from "clsx";
 import { isDemoDepositAddress, type Order, type Payment } from "@doorstep/shared";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Check, LoaderCircle, Send, Timer, TriangleExclamationPoint } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, LoaderCircle, Send, Timer, TriangleExclamationPoint, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Banner, Button, Card, CopyButton, CopyField, Countdown, DataList, Disclosure, Field, Input, NetworkBadge, QrCode, TokenIcon, useNow } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { chainName } from "../../lib/chains";
 import { formatDateTime, usdc } from "../../lib/format";
 import { PAYMENT_PROBLEMS, paymentProgress } from "../../lib/status";
+import {
+  payWithWallet,
+  recalledWalletTx,
+  rememberWalletTx,
+  type WalletPayment,
+  walletErrorMessage,
+  walletPaymentFor,
+  type WalletStep,
+  useInjectedWallet,
+} from "../../lib/wallet";
 
 export interface DepositViewProps {
   order: Order;
@@ -73,7 +83,7 @@ function SentForm({ order, payment, demoMode, onOrder }: { order: Order; payment
     },
   });
 
-  if (done || payment.status !== "PENDING_DEPOSIT") {
+  if (done || payment.originTxHash || payment.status !== "PENDING_DEPOSIT") {
     return (
       <p className="flex items-start gap-2 text-sm text-text-2">
         <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
@@ -126,6 +136,72 @@ function SentForm({ order, payment, demoMode, onOrder }: { order: Order; payment
   );
 }
 
+const STEP_TEXT: Record<WalletStep, (chain: string) => string> = {
+  connect: () => "Connecting to your wallet…",
+  switch: (chain) => `Switching your wallet to ${chain}…`,
+  confirm: () => "Confirm the payment in your wallet…",
+};
+
+/** One-tap payment from a browser wallet (ETH and ERC-20 tokens on Ethereum, Base, Arbitrum). */
+function PayWithWallet({ order, payment, wp, onOrder }: { order: Order; payment: Payment; wp: WalletPayment; onOrder: (o: Order) => void }) {
+  const wallet = useInjectedWallet();
+  const [sentHash, setSentHash] = useState<string | null>(() => recalledWalletTx(payment.depositAddress));
+  const [step, setStep] = useState<WalletStep | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (sentHash) {
+    return (
+      <Banner tone="success" title="Sent from your wallet">
+        <span className="block">Waiting for it to arrive. The status below updates by itself.</span>
+        <a href={wp.explorerTx + sentHash} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-medium underline underline-offset-2">
+          View your transaction <ExternalLink aria-hidden className="size-3.5" />
+        </a>
+      </Banner>
+    );
+  }
+  // Paid some other way and the hash was pasted: don't offer a second payment.
+  if (payment.originTxHash) return null;
+
+  // No wallet here. Switching to a wallet app now would lose the order pass,
+  // which lives in this browser, so the copy-the-address card below is the way.
+  if (!wallet) return null;
+
+  const pay = async () => {
+    setError(null);
+    try {
+      const hash = await payWithWallet(wallet, wp, setStep);
+      rememberWalletTx(payment.depositAddress, hash);
+      setSentHash(hash);
+      try {
+        onOrder(await api.orders.submitDeposit(order.id, { txHash: hash }));
+      } catch {
+        // Only speeds things up: the backend spots the deposit on its own.
+      }
+    } catch (e) {
+      setError(walletErrorMessage(e));
+    } finally {
+      setStep(null);
+    }
+  };
+
+  return (
+    <Card>
+      <Button size="lg" block icon={<Wallet aria-hidden className="size-4" />} loading={step !== null} loadingText={step ? STEP_TEXT[step](wp.chainName) : undefined} onClick={pay}>
+        Pay with wallet
+      </Button>
+      <p className="mt-2.5 text-xs text-text-3">
+        Your wallet opens with exactly {payment.amountInFormatted} {payment.originSymbol} on {wp.chainName} and this order's address filled in. You approve it there.
+        {wp.token ? ` You also need a little ETH on ${wp.chainName} for the network fee.` : ""}
+      </p>
+      {error && (
+        <Banner tone="danger" className="mt-3" role="alert">
+          {error}
+        </Banner>
+      )}
+    </Card>
+  );
+}
+
 const PROBLEM_COPY: Record<string, { title: string; body: (refundTo: string) => string; action: string }> = {
   INCOMPLETE_DEPOSIT: {
     title: "Not enough was received",
@@ -153,6 +229,7 @@ export function DepositView({ order, payment, demoMode, onOrder, onChangeToken, 
   const inFlight = payment.status !== "PENDING_DEPOSIT";
   // Demo mode and the sandbox use fake addresses no wallet accepts; say so loudly anyway.
   const practice = demoMode || isDemoDepositAddress(payment.depositAddress);
+  const walletPay = practice ? null : walletPaymentFor(payment);
 
   if (problem) {
     return (
@@ -226,6 +303,8 @@ export function DepositView({ order, payment, demoMode, onOrder, onChangeToken, 
               </p>
             </div>
           </Card>
+
+          {!inFlight && walletPay && <PayWithWallet order={order} payment={payment} wp={walletPay} onOrder={onOrder} />}
 
           {!inFlight && (
             <Card>

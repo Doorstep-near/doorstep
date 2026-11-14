@@ -8,6 +8,7 @@ import { api, errorMessage } from "../../lib/api";
 import { getOrCreateKey, loadKey } from "../../lib/buyerKey";
 import { chainInfo, chainName, previewRefundTo, refundPlan, validateNearAccount, validateOriginAddress } from "../../lib/chains";
 import { useTokens } from "../../lib/query";
+import { useInjectedWallet, walletAddress, walletErrorMessage } from "../../lib/wallet";
 import { savePaySession, type PaySession } from "./parts";
 
 type Phase = "idle" | "register" | "quote";
@@ -17,6 +18,37 @@ export interface CheckoutFormProps {
   session: PaySession;
   onSessionChange: (s: PaySession) => void;
   onPaymentReady: (order: Order) => void;
+}
+
+/** Fills the refund field from the browser wallet, so nobody types a 0x address on a phone. */
+function UseWalletAddress({ onAddress }: { onAddress: (address: string) => void }) {
+  const wallet = useInjectedWallet();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!wallet) return null;
+  return (
+    <div className="-mt-2 flex flex-col gap-1">
+      <button
+        type="button"
+        disabled={busy}
+        className="self-start text-sm font-medium text-brand underline-offset-2 hover:underline disabled:opacity-60"
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            onAddress(await walletAddress(wallet));
+          } catch (e) {
+            setError(walletErrorMessage(e));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Asking your wallet…" : "Use my wallet's address"}
+      </button>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  );
 }
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -186,6 +218,14 @@ export function CheckoutForm({ order, session, onSessionChange, onPaymentReady }
                 />
               )}
             </Field>
+            {family === "evm" && (
+              <UseWalletAddress
+                onAddress={(address) => {
+                  update({ originAddress: address });
+                  setTouched((t) => ({ ...t, origin: true }));
+                }}
+              />
+            )}
             {family === "other" && !fixedRefundAccount && (
               <Field
                 label="NEAR account for refunds"

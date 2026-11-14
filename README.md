@@ -28,7 +28,12 @@ prepaid ones ([Razorpay](https://razorpay.com/blog/cash-on-delivery-and-the-chal
 2. **The buyer pays with any token on any chain.** NEAR Intents 1Click converts
    it into exactly the price in USDC and delivers it straight into the escrow
    contract, tagged with the order id. The order turns **Funded** on chain with
-   no manual step.
+   no manual step. For ETH and tokens on Ethereum, Base and Arbitrum, a
+   **Pay with wallet** button sends the exact amount from a browser wallet
+   (MetaMask, Coinbase Wallet, Rabby, or a phone wallet's built-in browser).
+   On a phone, the pay page offers to reopen itself inside MetaMask or
+   Coinbase Wallet. Any other wallet or exchange can send to the deposit
+   address shown.
 3. **The shop hands the parcel over** (by hand, by courier, or with a tracking
    number) and marks it shipped.
 4. **Delivery is proven** in one of three ways:
@@ -49,15 +54,17 @@ buyer) can withdraw to any chain from https://app.near-intents.org.
 
 ## Proven on NEAR mainnet
 
-Three real orders, each with real USDC. The shop account `0xeraya.near` belongs
-to Eraya Foods (Delhi), who agreed to receive payments through Doorstep. These
-were small test orders placed by the team, not customer traction.
+Real orders with real USDC. The shop account `0xeraya.near` belongs to Eraya
+Foods (Delhi), who agreed to receive payments through Doorstep. These were small
+test orders placed by the team, not customer traction. Orders #4 and #6 (0.20
+USDC each) repeated the #2 path and are not listed; #5 was opened but never paid.
 
 | Order | What it proves | Transactions |
 | --- | --- | --- |
 | **#1** (scripts, 12 Nov) | 1Click → escrow with `customRecipientMsg`; buyer-signed delivery; release into NEAR Intents | Full log in [`scripts/TEST-RESULTS.md`](scripts/TEST-RESULTS.md) |
 | **#2** (app, 13 Nov), 0.20 USDC, shop `0xeraya.near` | The whole app flow: paid from Base → Funded → handed over → **6-digit code countersigned by the checker key** → released automatically after the window | [create](https://nearblocks.io/txns/AwM3vP7cM2g8qAB1wh64Y7w2ZfTwk13fTRxkC1RFiA9x) · [Base payment](https://basescan.org/tx/0x585066f748d626ecb2704fe8edb6a9b880e33f18be6bf4dfb39adee85115377a) · [funded](https://nearblocks.io/txns/6MqgmzSFGbNQvTk1g9rTvwnrE2btptC86A21zi8eb76M) · [shipped](https://nearblocks.io/txns/HmTwuwvMQg4XuBEDaxLsAD9KrxLwY9fkkXDsNck7d6Ui) · [delivered](https://nearblocks.io/txns/HJ9bBhg3aG1nJZJrvRLQaGVFPiMUq71LLhCMxuBsQ3ow) · [released](https://nearblocks.io/txns/8SKBPrKJ2cje2XMjqCzvEa3FJUuryPpcS7a4nMdb1eKv) |
 | **#3** (app, 14 Nov), 1.00 USDC, shop `0xeraya.near` | **Buyer complaint inside the window** freezes the money; the **owner resolves it as a refund**; 1.00 USDC is credited back to the buyer in NEAR Intents | [create](https://nearblocks.io/txns/3wXxDRdKJHKDyBfwZVnYXXcwzmPkfU8F14x5G928bSKa) · [Base payment](https://basescan.org/tx/0xdd8e1afd1126267f32a5770d8dff7bb8b8c66e9dffd0fbe360b3f6a9b2e40f93) · [funded](https://nearblocks.io/txns/8DrdKmBeiftckPvdEDoRRemySUAmkNx3xhTF8M84StwG) · [delivered](https://nearblocks.io/txns/HBr99kyxmsctyzFgyMzePkdKjTmnyYRaMLN9DYUnXTkw) · [complaint](https://nearblocks.io/txns/9T8nVJoXi8F5dy5FHiZLfDpbzSEmVpCfmBK8zLwW6jzg) · [resolved, refunded](https://nearblocks.io/txns/BwrXwtUWTsynCAhm151kWYmNWFttPEQyxZZTLCn9ZjLf) |
+| **#7** (app, 14 Nov), 2.00 USDC, shop `0xeraya.near` — the order in the demo video | The full flow, filmed: paid from Base → Funded → handed over → 6-digit code → released automatically; 14 minutes from order to shop paid | [create](https://nearblocks.io/txns/4UwYzv1X9c4BTR3fE8kK9P8nCPLuiiqar4asdj7sHCPo) · [Base payment](https://basescan.org/tx/0x943324b4e64af1e6af89c33d5603f7a1767c2eec64c05e4a1d8467ed54eb4a69) · [funded](https://nearblocks.io/txns/9mCQoenBZy6kDADQhvkmZ6y28ut1Hp17jEENNWHobA8r) · [shipped](https://nearblocks.io/txns/GggmU25yHAxe2A4DjF3KaYYStrPzL7XqHAb8iUY2FeJw) · [delivered](https://nearblocks.io/txns/7r7YRrTAv6dkRU3g97RBNvu6Hx2qQhVVTjv181cvX1eQ) · [released](https://nearblocks.io/txns/DDzh22LQSB7HGebsRXYHHnuSM2qibSoauyUJH34moGHH) |
 
 Each release and refund transaction shows the same log sequence: the escrow
 emits `order_released` or `order_refunded`, the USDC contract transfers to
@@ -110,7 +117,7 @@ Browser-only version, with no backend at all: `npm run dev:mock`.
 ### Tests
 
 ```bash
-npm test                 # shared 5, API 72, web 70 tests (no network)
+npm test                 # shared 5, API 72, web 107 tests (no network)
 npm run test:contract    # 49 contract unit tests (needs Rust)
 ```
 
@@ -176,8 +183,20 @@ These paths are covered by unit tests but have not run with real money yet:
 - a Borzo courier webhook (only Borzo's test environment so far);
 - a shop withdrawing from NEAR Intents to another chain;
 - payments in anything other than USDC on Base;
+- the **Pay with wallet** button (tested against a fake wallet; it sends the
+  same plain transfer as the exchange withdrawals above);
 - Ship24 tracking webhooks, parked (unmatched) payments with
   `refund_unmatched`, and the `Direct` payout mode.
+
+## Next
+
+- **One-tap payment from NEAR wallets** (NEAR Mobile, Meteor, HOT) through
+  NEAR Wallet Selector. The pay page already offers USDC, USDT and wNEAR on
+  NEAR through the copy-the-address flow, but that hasn't been tested with real
+  money. The button would also register the deposit address with the token and
+  wrap NEAR when needed.
+- **WalletConnect**, so a phone wallet can pay a page open on a laptop by
+  scanning a QR code.
 
 ## Repository
 
